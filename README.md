@@ -3,7 +3,7 @@
 Scrapidou is a clean, modular MCP server for web scraping and URL fetching.
 
 [![npm version](https://img.shields.io/badge/npm-v1.0.0-blue)](https://www.npmjs.com/package/@shyzus/mcp-scrapidou)
-![Node](https://img.shields.io/badge/node-18%2B-green)
+![Node](https://img.shields.io/badge/node-20%2B-green)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)
 ![MCP](https://img.shields.io/badge/MCP-2025--06--18-orange)
 ![ChatGPT](https://img.shields.io/badge/ChatGPT-Apps%20SDK-purple)
@@ -27,8 +27,14 @@ This application allows **ChatGPT** and other MCP clients to fetch and scrape we
 
 ### ✨ Features
 
-- 🌐 **URL Fetching** - Retrieve content from any URL
-- 📄 **HTML Parsing** - Extract structured data from web pages
+- 🌐 **URL Fetching** - Retrieve content from any URL with proper headers and redirect handling
+- 📄 **Flexible Extraction Modes** - Three modes: `light` (metadata + text only), `standard` (text + links + issues), `full` (HTML + all)
+- 📝 **Text Content Extraction** - Clean text extraction without HTML tags for LLM consumption
+- 🎨 **HTML Content Extraction** - Full HTML content preservation in `full` mode (formatting, images, citations)
+- 🔍 **Issue Detection** - Automatically detect paywalls, login requirements, and partial content
+- 🔗 **Related Links** - Extract relevant links (see also, related articles) while filtering ads and navigation
+- 🧭 **Navigation Links** - Extract sidebar/menu links for documentation sites (optional)
+- 📊 **Metadata Extraction** - Extract title, description, author, and publication date
 - 🏗️ **Modular Architecture** - Clean separation of concerns, reusable for future projects
 - 🔌 **Dual Mode** - Works with ChatGPT (HTTP) and IDEs (stdio)
 
@@ -38,7 +44,18 @@ In ChatGPT, simply ask:
 
 > "Fetch the content from https://example.com"
 
-ChatGPT will use the MCP server to get the information.
+Or:
+
+> "Extract the main content from https://blog.example.com/article in light mode"
+
+Or:
+
+> "Get the full HTML content from https://docs.example.com/page"
+
+ChatGPT will use the MCP server to fetch, extract, and return the content according to the selected mode:
+- **Light mode**: Fast, minimal response (metadata + text only)
+- **Standard mode**: Complete text content with related links and issues (default)
+- **Full mode**: Everything including HTML for advanced use cases
 
 ---
 
@@ -150,20 +167,27 @@ mcp-fetch-url/
 ├── src/
 │   ├── config.ts              # Configuration centralisée
 │   ├── types.ts               # Types TypeScript partagés
-│   ├── client/                # Client API abstractions (future)
-│   ├── tools/                 # MCP tools (future)
+│   ├── client/
+│   │   └── httpClient.ts      # HTTP client avec headers, redirections, timeout
+│   ├── tools/
+│   │   └── fetchUrl.ts        # Tool MCP: fetch_url
 │   ├── resources/             # Templates (future)
 │   ├── servers/
 │   │   ├── stdio.ts           # Serveur stdio (IDEs)
 │   │   └── http.ts            # Serveur HTTP (ChatGPT)
 │   ├── utils/
-│   │   └── errors.ts          # Gestion erreurs centralisée
+│   │   ├── errors.ts          # Gestion erreurs centralisée
+│   │   ├── contentExtractor.ts # Extraction contenu (Readability + fallback) + text extraction
+│   │   ├── issueDetector.ts   # Détection paywall, login, contenu partiel
+│   │   ├── linkExtractor.ts   # Extraction liens pertinents (related links)
+│   │   └── navigationExtractor.ts # Extraction liens navigation (sidebar/menu)
 │   ├── index.ts               # Entry point stdio
 │   ├── http-server.ts         # Entry point HTTP
 │   └── http-client.ts         # Client npm
 ├── dist/                      # Compiled code (generated)
 ├── Dockerfile                 # Multi-stage Docker image
 ├── docker-compose.yml         # Stack with Traefik labels
+├── .nvmrc                     # Node version (20)
 ├── package.json               # Server dependencies
 ├── tsconfig.json              # TypeScript config
 └── README.md                  # This file
@@ -208,8 +232,11 @@ This project serves as a **template/base** for future MCP servers with a clean, 
 
 - **`config.ts`**: Environment variables, constants, validation
 - **`types.ts`**: Shared TypeScript interfaces
-- **`client/`**: External API abstraction (future)
-- **`tools/`**: Business logic (validation, transformation, formatting)
+- **`client/httpClient.ts`**: HTTP client abstraction (fetch, headers, redirects, timeout)
+- **`tools/fetchUrl.ts`**: Business logic (validation, extraction orchestration)
+- **`utils/contentExtractor.ts`**: Content extraction (Readability + fallback)
+- **`utils/issueDetector.ts`**: Issue detection (paywall, login, partial content)
+- **`utils/linkExtractor.ts`**: Related links extraction and filtering
 - **`servers/`**: MCP implementation (stdio/HTTP), reuses tools
 - **`utils/errors.ts`**: Custom error classes, formatting
 
@@ -238,8 +265,11 @@ See [CONTEXT.md](CONTEXT.md) for detailed architecture documentation.
 ### Server won't start
 
 ```bash
-# Check that Node.js is installed
-node --version  # Must be 18+
+# Check that Node.js is installed (requires Node 20+)
+node --version  # Must be 20+
+
+# If using nvm, switch to Node 20
+nvm use 20  # or nvm install 20
 
 # Check that dependencies are installed
 npm install
@@ -247,6 +277,8 @@ npm install
 # Full rebuild
 npm run build
 ```
+
+**Note**: This project requires Node.js 20+ due to dependencies (jsdom, @mozilla/readability). Use `.nvmrc` file or `nvm use` to ensure the correct version.
 
 ### CORS errors
 

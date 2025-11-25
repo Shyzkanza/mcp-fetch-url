@@ -11,11 +11,20 @@
     "dist/http-client.js",
     "README.md"
   ],
-  "keywords": ["mcp", "scraping", "fetch", "web", "url", "html", "metadata", "chatgpt"],
+  "keywords": [
+    "mcp",
+    "scraping",
+    "fetch",
+    "web",
+    "url",
+    "html",
+    "metadata",
+    "chatgpt"
+  ],
   "author": "Rankorr",
   "license": "MIT",
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   },
   "repository": {
     "type": "git",
@@ -30,12 +39,15 @@
     "prepare": "npm run build"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.4"
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "@mozilla/readability": "^0.6.0",
+    "cheerio": "^1.1.0",
+    "jsdom": "^22.1.0"
   },
   "devDependencies": {
+    "@types/jsdom": "^27.0.0",
     "@types/node": "^20.10.0",
     "tsx": "^4.7.0",
     "typescript": "^5.3.0"
   }
 }
-

@@ -9,14 +9,18 @@ import { ErrorCode, MCPError } from '../types.js';
  */
 export class ScrapidouError extends Error {
   constructor(
-    public code: ErrorCode,
+    public readonly code: ErrorCode,
     message: string,
-    public details?: unknown
+    public readonly details?: unknown
   ) {
     super(message);
     this.name = 'ScrapidouError';
+    Object.setPrototypeOf(this, ScrapidouError.prototype);
   }
 
+  /**
+   * Convertit l'erreur en format MCP
+   */
   toMCPError(): MCPError {
     return {
       code: this.code,
@@ -27,27 +31,17 @@ export class ScrapidouError extends Error {
 }
 
 /**
- * Erreur de validation des entrées
+ * Erreur pour les inputs invalides
  */
-export class ValidationError extends ScrapidouError {
+export class InvalidInputError extends ScrapidouError {
   constructor(message: string, details?: unknown) {
     super(ErrorCode.INVALID_INPUT, message, details);
-    this.name = 'ValidationError';
+    this.name = 'InvalidInputError';
   }
 }
 
 /**
- * Erreur réseau
- */
-export class NetworkError extends ScrapidouError {
-  constructor(message: string, details?: unknown) {
-    super(ErrorCode.NETWORK_ERROR, message, details);
-    this.name = 'NetworkError';
-  }
-}
-
-/**
- * Erreur API externe
+ * Erreur pour les erreurs API externes
  */
 export class APIError extends ScrapidouError {
   constructor(message: string, details?: unknown) {
@@ -57,25 +51,74 @@ export class APIError extends ScrapidouError {
 }
 
 /**
- * Formatte une erreur pour la réponse MCP
+ * Erreur pour les erreurs réseau
  */
-export function formatError(error: unknown): MCPError {
+export class NetworkError extends ScrapidouError {
+  constructor(message: string, details?: unknown) {
+    super(ErrorCode.NETWORK_ERROR, message, details);
+    this.name = 'NetworkError';
+  }
+}
+
+/**
+ * Erreur pour les ressources non trouvées
+ */
+export class NotFoundError extends ScrapidouError {
+  constructor(message: string, details?: unknown) {
+    super(ErrorCode.NOT_FOUND, message, details);
+    this.name = 'NotFoundError';
+  }
+}
+
+/**
+ * Erreur pour les limites de taux dépassées
+ */
+export class RateLimitError extends ScrapidouError {
+  constructor(message: string, details?: unknown) {
+    super(ErrorCode.RATE_LIMIT, message, details);
+    this.name = 'RateLimitError';
+  }
+}
+
+/**
+ * Formate une erreur pour la réponse MCP
+ */
+export function formatErrorForMCP(error: unknown): string {
   if (error instanceof ScrapidouError) {
-    return error.toMCPError();
+    const mcpError = error.toMCPError();
+    let message = `Error [${mcpError.code}]: ${mcpError.message}`;
+    if (mcpError.details) {
+      message += `\nDetails: ${JSON.stringify(mcpError.details, null, 2)}`;
+    }
+    return message;
   }
 
   if (error instanceof Error) {
-    return {
-      code: ErrorCode.INTERNAL_ERROR,
-      message: error.message,
-      details: error.stack,
-    };
+    return `Error: ${error.message}`;
   }
 
-  return {
-    code: ErrorCode.INTERNAL_ERROR,
-    message: 'An unknown error occurred',
-    details: error,
-  };
+  return `Unknown error: ${String(error)}`;
+}
+
+/**
+ * Vérifie si une erreur est une erreur réseau (timeout, connexion, etc.)
+ */
+export function isNetworkError(error: unknown): boolean {
+  if (error instanceof NetworkError) {
+    return true;
+  }
+
+  if (error instanceof Error) {
+    const message = error.message.toLowerCase();
+    return (
+      message.includes('network') ||
+      message.includes('timeout') ||
+      message.includes('connection') ||
+      message.includes('econnrefused') ||
+      message.includes('enotfound')
+    );
+  }
+
+  return false;
 }
 

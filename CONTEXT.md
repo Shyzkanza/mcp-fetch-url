@@ -1,7 +1,7 @@
 # 🧠 CONTEXT - Scrapidou
 
 **Last update**: 2025-11-25
-**Status**: 🏗️ Base architecture ready - No tools implemented yet
+**Status**: ✅ Tool `fetch_url` implemented and ready for testing
 
 ---
 
@@ -10,7 +10,7 @@
 **Project name**: Scrapidou  
 **Repository**: mcp-fetch-url  
 **Description**: Clean, modular MCP server for web scraping and URL fetching  
-**Technologies**: Node.js 18+, TypeScript, MCP SDK
+**Technologies**: Node.js 20+, TypeScript, MCP SDK, Cheerio, Mozilla Readability, jsdom
 
 ---
 
@@ -21,8 +21,11 @@
 - **Modular Architecture**: Clean separation of concerns (same as GeoCrafter)
   - **`config.ts`**: Centralized configuration with validation
   - **`types.ts`**: Shared TypeScript interfaces
-  - **`client/`**: External API abstraction (future: HTTP client, rate limiter)
-  - **`tools/`**: Business logic (validation, transformation, formatting) - **TO BE IMPLEMENTED**
+  - **`client/httpClient.ts`**: HTTP client abstraction (fetch, headers, redirects, timeout)
+  - **`tools/fetchUrl.ts`**: Business logic (validation, extraction orchestration) - **✅ IMPLEMENTED**
+  - **`utils/contentExtractor.ts`**: Content extraction using Readability + fallback
+  - **`utils/issueDetector.ts`**: Issue detection (paywall, login, partial content)
+  - **`utils/linkExtractor.ts`**: Related links extraction and filtering
   - **`servers/`**: MCP implementation (stdio/HTTP), reuses tools
   - **`utils/errors.ts`**: Custom error classes, formatting
   - **Entry points**: Thin wrappers that delegate to servers
@@ -63,14 +66,19 @@ mcp-fetch-url/
 ├── src/
 │   ├── config.ts              # ✅ Configuration centralisée
 │   ├── types.ts               # ✅ Types TypeScript partagés
-│   ├── client/                # 🔜 Client HTTP abstractions
-│   ├── tools/                 # 🔜 MCP tools (fetch_url, scrape, etc.)
+│   ├── client/
+│   │   └── httpClient.ts      # ✅ HTTP client avec headers, redirections
+│   ├── tools/
+│   │   └── fetchUrl.ts        # ✅ Tool MCP: fetch_url
 │   ├── resources/             # 🔜 Templates (if needed)
 │   ├── servers/
 │   │   ├── stdio.ts           # ✅ Serveur stdio (IDEs)
 │   │   └── http.ts            # ✅ Serveur HTTP (ChatGPT)
 │   ├── utils/
-│   │   └── errors.ts          # ✅ Gestion erreurs centralisée
+│   │   ├── errors.ts          # ✅ Gestion erreurs centralisée
+│   │   ├── contentExtractor.ts # ✅ Extraction contenu (Readability + fallback)
+│   │   ├── issueDetector.ts   # ✅ Détection paywall, login, contenu partiel
+│   │   └── linkExtractor.ts   # ✅ Extraction liens pertinents
 │   ├── index.ts               # ✅ Entry point stdio
 │   ├── http-server.ts         # ✅ Entry point HTTP
 │   └── http-client.ts         # ✅ Client npm
@@ -78,6 +86,7 @@ mcp-fetch-url/
 ├── Dockerfile                 # ✅ Multi-stage Docker image
 ├── docker-compose.yml         # ✅ Stack with Traefik labels
 ├── package.json               # ✅ @shyzus/mcp-scrapidou
+├── .nvmrc                     # ✅ Node version (20)
 └── README.md                  # ✅ Complete docs
 ```
 
@@ -89,24 +98,56 @@ mcp-fetch-url/
 
 - ✅ Project structure created
 - ✅ TypeScript configuration
-- ✅ Package.json with scripts
+- ✅ Package.json with scripts (Node 20+ requirement)
 - ✅ Docker & docker-compose
-- ✅ Basic HTTP & stdio servers (skeleton)
+- ✅ HTTP & stdio servers with tool registration
 - ✅ Error handling system
 - ✅ Configuration management
 - ✅ Documentation (README, CONTEXT, GITFLOW, SECRETS, OPENAI)
+- ✅ `.nvmrc` file for Node version management
+
+### Tool `fetch_url` Implemented ✅
+
+- ✅ **HTTP Client** (`src/client/httpClient.ts`):
+  - Fetch avec headers appropriés (User-Agent, Accept, etc.)
+  - Gestion des redirections (max 5)
+  - Timeout configurable (30s par défaut)
+  - Gestion d'erreurs réseau complète
+
+- ✅ **Content Extractor** (`src/utils/contentExtractor.ts`):
+  - Utilise Mozilla Readability pour extraction principale
+  - Fallback manuel si Readability échoue
+  - Nettoyage HTML (enlève pubs, scripts, styles)
+  - Préserve structure (images, citations, formatage)
+
+- ✅ **Issue Detector** (`src/utils/issueDetector.ts`):
+  - Détection paywall (mots-clés, classes CSS)
+  - Détection login required (formulaires, messages)
+  - Détection contenu partiel (preview, "read more")
+
+- ✅ **Link Extractor** (`src/utils/linkExtractor.ts`):
+  - Extraction liens "see also", "related articles"
+  - Filtrage des pubs et navigation
+  - Normalisation URLs (relatives → absolues)
+  - Déduplication et limitation (20 max)
+
+- ✅ **Tool MCP** (`src/tools/fetchUrl.ts`):
+  - Validation URL
+  - Orchestration extraction complète
+  - Extraction métadonnées (title, description, author, publishedDate)
+  - Format JSON structuré
+
+- ✅ **Integration**:
+  - Tool enregistré dans serveurs stdio et HTTP
+  - Description claire pour ChatGPT
+  - Format de réponse optimisé
 
 ### To Be Implemented (Future)
 
-- 🔜 HTTP client with rate limiting
-- 🔜 Tools implementation:
-  - `fetch_url` - Retrieve content from any URL
-  - `scrape_metadata` - Extract metadata (title, description, og:tags)
-  - `scrape_content` - Extract main content from HTML
-  - More tools as needed
-- 🔜 HTML parsing utilities
-- 🔜 robots.txt respect
-- 🔜 Caching layer (optional)
+- 🔜 Rate limiting par domaine
+- 🔜 Respect robots.txt
+- 🔜 Caching layer (optionnel)
+- 🔜 Additional tools (scrape_metadata standalone, etc.)
 
 ---
 
@@ -131,6 +172,21 @@ npm run dev:http
 NODE_ENV=production
 PORT=3000
 CORS_ORIGIN=*  # default: * in dev, https://chatgpt.com in prod
+```
+
+### Node.js Version
+
+**Requirement**: Node.js 20+ (due to jsdom and @mozilla/readability dependencies)
+
+Use `.nvmrc` file:
+```bash
+nvm use  # Automatically uses Node 20
+```
+
+Or manually:
+```bash
+nvm install 20
+nvm use 20
 ```
 
 ### Endpoints
@@ -231,34 +287,48 @@ Les tags doivent correspondre EXACTEMENT à la version dans `package.json`
 ## 📝 Change History
 
 ### 2025-11-25
+- ✅ **Tool `fetch_url` implemented**
+  - Implemented HTTP client with headers, redirects, timeout
+  - Implemented content extraction using Mozilla Readability + fallback
+  - Implemented issue detection (paywall, login required, partial content)
+  - Implemented related links extraction with filtering
+  - Implemented metadata extraction (title, description, author, publishedDate)
+  - Registered tool in stdio and HTTP servers
+  - Updated to Node.js 20+ requirement (added .nvmrc)
+  - Ready for testing
+
+### 2025-11-25 (earlier)
 - ✅ **Initial base structure created**
   - Created modular architecture (config, types, servers, utils)
   - Created skeleton HTTP & stdio servers
   - Created Docker configuration
   - Created complete documentation (README, CONTEXT, GITFLOW, SECRETS, OPENAI)
-  - Ready for tools implementation
 
 ---
 
 ## 💡 Technical Notes
 
-### Server Flow (Future)
+### Server Flow (Current Implementation)
 ```
 ChatGPT/IDE requests web content
   ↓
-Call tool (fetch_url, scrape_content, etc.)
+Call tool fetch_url with URL
   ↓
-Server validates inputs
+Server validates URL format
   ↓
-Server calls tool (business logic)
+Tool calls httpClient.fetchPage()
   ↓
-Tool calls client (HTTP abstraction)
+HTTP client fetches page (headers, redirects, timeout)
   ↓
-Client fetches URL with rate limiting
+Tool extracts main content (Readability + fallback)
   ↓
-Client returns data
+Tool detects issues (paywall, login, partial)
   ↓
-Tool formats output
+Tool extracts related links (filtered, deduplicated)
+  ↓
+Tool extracts metadata (title, description, author)
+  ↓
+Tool formats JSON response
   ↓
 Server returns to ChatGPT/IDE
 ```
