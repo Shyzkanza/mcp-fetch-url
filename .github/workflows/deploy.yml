@@ -1,0 +1,200 @@
+name: Deploy Scrapidou to VPS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Annule les déploiements précédents
+concurrency:
+  group: deploy-scrapidou-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Job 1: Tests et vérifications
+  test:
+    name: Run Tests & Type Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci --ignore-scripts
+    
+    - name: TypeScript Type Check
+      run: npx tsc --noEmit
+    
+    - name: Build Test
+      run: |
+        npm run build
+        echo "✅ Build successful"
+  
+  # Job 2: Déploiement via Portainer
+  deploy:
+    name: Deploy via Portainer
+    runs-on: ubuntu-latest
+    needs: test  # Attend que les tests passent
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    # Redéploiement via Portainer API
+    - name: Redeploy via Portainer Git
+      run: |
+        echo "🔐 Authentification à Portainer..."
+        
+        # Normaliser l'URL Portainer (supprimer le / final s'il existe)
+        PORTAINER_URL="${{ secrets.PORTAINER_URL }}"
+        PORTAINER_URL="${PORTAINER_URL%/}"
+        
+        # Authentification Portainer avec gestion d'erreur
+        AUTH_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+          "${PORTAINER_URL}/api/auth" \
+          -H "Content-Type: application/json" \
+          -d '{"Username":"${{ secrets.PORTAINER_USERNAME }}","Password":"${{ secrets.PORTAINER_PASSWORD }}"}')
+        
+        HTTP_CODE=$(echo "$AUTH_RESPONSE" | tail -n1)
+        AUTH_BODY=$(echo "$AUTH_RESPONSE" | sed '$d')
+        
+        if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+          echo "❌ Erreur d'authentification Portainer (HTTP $HTTP_CODE)"
+          echo "Réponse: $AUTH_BODY"
+          exit 1
+        fi
+        
+        AUTH_TOKEN=$(echo "$AUTH_BODY" | jq -r '.jwt // empty')
+        
+        if [ -z "$AUTH_TOKEN" ] || [ "$AUTH_TOKEN" = "null" ] || [ "$AUTH_TOKEN" = "empty" ]; then
+          echo "❌ Token JWT non trouvé dans la réponse"
+          echo "Réponse complète: $AUTH_BODY"
+          exit 1
+        fi
+        
+        echo "✅ Authentification Portainer réussie"
+        
+        # Git redeploy
+        echo "🔄 Redéploiement de la stack depuis Git..."
+        
+        RESPONSE=$(curl -s -w "\n%{http_code}" -X PUT \
+          "${PORTAINER_URL}/api/stacks/${{ secrets.PORTAINER_STACK_ID }}/git/redeploy?endpointId=${{ secrets.PORTAINER_ENDPOINT_ID }}" \
+          -H "Authorization: Bearer $AUTH_TOKEN" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "prune": false,
+            "pullImage": true,
+            "repositoryAuthentication": true,
+            "repositoryUsername": "${{ github.actor }}",
+            "repositoryPassword": "${{ secrets.GITHUB_TOKEN }}",
+            "repositoryReferenceName": "refs/heads/main"
+          }')
+        
+        HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+        BODY=$(echo "$RESPONSE" | sed '$d')
+        
+        if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+          echo "✅ Stack redéployée depuis Git (HTTP $HTTP_CODE)"
+        else
+          echo "❌ Erreur lors du redéploiement (HTTP $HTTP_CODE)"
+          echo "$BODY"
+          exit 1
+        fi
+        
+        # Attendre le redémarrage complet
+        echo "⏳ Attente de 30 secondes pour le démarrage du conteneur..."
+        sleep 30
+  
+  # Job 3: Publish to npm
+  publish-npm:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+    needs: test  # Attend les tests
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        registry-url: 'https://registry.npmjs.org'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci --ignore-scripts
+    
+    - name: Build package
+      run: npm run build
+    
+    - name: Check if version already published
+      id: check-version
+      run: |
+        PACKAGE_VERSION=$(node -p "require('./package.json').version")
+        if npm view @shyzus/mcp-scrapidou@$PACKAGE_VERSION version 2>/dev/null; then
+          echo "Version $PACKAGE_VERSION already published, skipping..."
+          echo "skip=true" >> $GITHUB_OUTPUT
+        else
+          echo "Version $PACKAGE_VERSION not published yet"
+          echo "skip=false" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Publish to npm
+      if: steps.check-version.outputs.skip == 'false'
+      run: npm publish --access public
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+  
+  # Job 4: Health Check
+  health-check:
+    name: Health Check
+    runs-on: ubuntu-latest
+    needs: deploy  # Attend le déploiement
+    
+    steps:
+    - name: Test API Health
+      run: |
+        echo "🔍 Test de l'API via Traefik..."
+        
+        # Test avec retry en cas d'échec temporaire
+        for i in {1..5}; do
+          echo "🔄 Tentative $i/5..."
+          
+          if curl -f -k https://scrapidou.rankorr.red/health; then
+            echo ""
+            echo "✅ API accessible via Traefik !"
+            
+            # Test endpoint MCP
+            echo "🔍 Test de l'endpoint MCP..."
+            curl -f -k https://scrapidou.rankorr.red/mcp || true
+            
+            exit 0
+          else
+            echo "⚠️ Échec tentative $i, attente 10s..."
+            sleep 10
+          fi
+        done
+        
+        echo "❌ L'API n'est pas accessible après 5 tentatives"
+        exit 1
+    
+    - name: Deployment Summary
+      if: always()
+      run: |
+        if [ ${{ job.status }} == 'success' ]; then
+          echo "🎉 Déploiement réussi: https://scrapidou.rankorr.red"
+          echo "📍 Endpoint MCP: https://scrapidou.rankorr.red/mcp"
+          echo "💚 Health: https://scrapidou.rankorr.red/health"
+        else
+          echo "❌ Health check échoué"
+        fi
+
