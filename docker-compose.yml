@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  mcp-scrapidou:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mcp-scrapidou
+    restart: unless-stopped
+    
+    expose:
+      - "3000"
+    
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mcp-scrapidou.entrypoints=websecure"
+      - "traefik.http.routers.mcp-scrapidou.rule=Host(`scrapidou.rankorr.red`)"
+      - "traefik.http.routers.mcp-scrapidou.tls=true"
+      - "traefik.http.routers.mcp-scrapidou.tls.certresolver=myresolver"
+      - "traefik.http.routers.mcp-scrapidou.middlewares=mcp-scrapidou-cors"
+      - "traefik.http.services.mcp-scrapidou.loadbalancer.server.port=3000"
+      - "traefik.http.middlewares.mcp-scrapidou-cors.headers.accesscontrolalloworiginlist=https://chatgpt.com,https://chat.openai.com"
+      - "traefik.http.middlewares.mcp-scrapidou-cors.headers.accesscontrolallowmethods=GET,POST,OPTIONS"
+      - "traefik.http.middlewares.mcp-scrapidou-cors.headers.accesscontrolallowheaders=Content-Type,Authorization"
+      - "traefik.http.middlewares.mcp-scrapidou-cors.headers.accesscontrolmaxage=86400"
+    
+    networks:
+      - playlist-server_web
+    
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  playlist-server_web:
+    external: true
+

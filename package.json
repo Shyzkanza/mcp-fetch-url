@@ -1,0 +1,41 @@
+{
+  "name": "@shyzus/mcp-scrapidou",
+  "version": "1.0.0",
+  "description": "Scrapidou - MCP server for web scraping and URL fetching",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "mcp-scrapidou": "dist/http-client.js"
+  },
+  "files": [
+    "dist/http-client.js",
+    "README.md"
+  ],
+  "keywords": ["mcp", "scraping", "fetch", "web", "url", "html", "metadata", "chatgpt"],
+  "author": "Rankorr",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Shyzkanza/mcp-fetch-url"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/index.ts",
+    "dev:http": "tsx watch src/http-server.ts",
+    "start": "node dist/index.js",
+    "start:http": "node dist/http-server.js",
+    "prepare": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  }
+}
+

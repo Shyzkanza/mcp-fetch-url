@@ -1,1 +1,295 @@
-# mcp-fetch-url
+# 🕷️ Scrapidou - Web Scraping Server for ChatGPT
+
+Scrapidou is a clean, modular MCP server for web scraping and URL fetching.
+
+[![npm version](https://img.shields.io/badge/npm-v1.0.0-blue)](https://www.npmjs.com/package/@shyzus/mcp-scrapidou)
+![Node](https://img.shields.io/badge/node-18%2B-green)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)
+![MCP](https://img.shields.io/badge/MCP-2025--06--18-orange)
+![ChatGPT](https://img.shields.io/badge/ChatGPT-Apps%20SDK-purple)
+
+---
+
+## ⚠️ Disclaimer
+
+**This project is independent and unofficial.**
+
+- ❌ **Not affiliated** with any scraping service
+- ✅ Educational and practical purpose project
+- ✅ Respects robots.txt and rate limiting
+- ⚠️ **Use responsibly** - respect website terms of service
+
+---
+
+## 🎯 What is it?
+
+This application allows **ChatGPT** and other MCP clients to fetch and scrape web content with a **clean, modular architecture**.
+
+### ✨ Features
+
+- 🌐 **URL Fetching** - Retrieve content from any URL
+- 📄 **HTML Parsing** - Extract structured data from web pages
+- 🏗️ **Modular Architecture** - Clean separation of concerns, reusable for future projects
+- 🔌 **Dual Mode** - Works with ChatGPT (HTTP) and IDEs (stdio)
+
+### 💬 Usage example
+
+In ChatGPT, simply ask:
+
+> "Fetch the content from https://example.com"
+
+ChatGPT will use the MCP server to get the information.
+
+---
+
+## 🏗️ Architecture: ChatGPT MCP App
+
+### What is a ChatGPT App?
+
+**ChatGPT Apps** (via [Apps SDK](https://developers.openai.com/apps-sdk)) allow you to extend ChatGPT with:
+- **Custom tools** (call external APIs)
+- **Real-time data** (up-to-date information)
+
+### How does it work?
+
+```
+┌─────────────┐         ┌──────────────┐         ┌──────────────┐
+│   ChatGPT   │ ◄─────► │  MCP Server  │ ◄─────► │  Target URL  │
+│             │  HTTP   │  (Node.js)   │  HTTP   │              │
+└─────────────┘         └──────────────┘         └──────────────┘
+```
+
+1. **ChatGPT** calls your MCP server via the [Model Context Protocol](https://modelcontextprotocol.io/)
+2. **The MCP server** fetches data from the target URL
+3. **The results** are returned to ChatGPT
+
+### MCP Protocol
+
+MCP (Model Context Protocol) is an open standard created by Anthropic that allows LLMs to access external data and tools securely. It is used by:
+- ChatGPT (via Apps SDK)
+- Claude Desktop
+- Cursor
+- Other MCP clients
+
+---
+
+## 🚀 Quick Start
+
+### Use with Cursor / Claude Desktop / Warp
+
+**The easiest way** - Install the npm client that connects to the remote server:
+
+```json
+{
+  "mcpServers": {
+    "mcp-scrapidou": {
+      "command": "npx",
+      "args": ["-y", "@shyzus/mcp-scrapidou"]
+    }
+  }
+}
+```
+
+**Config file locations:**
+- **Cursor**: `~/.cursor/mcp.json` (macOS/Linux) or `%APPDATA%\Cursor\mcp.json` (Windows)
+- **Claude Desktop**: `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
+- **Warp**: In Warp AI settings
+
+---
+
+### Use with ChatGPT
+
+A production server will be available soon!
+
+**Server URL**: `https://scrapidou.rankorr.red/mcp`
+
+#### ChatGPT Configuration
+
+1. **Have a ChatGPT account with subscription** (ChatGPT Plus, Team, or Enterprise)
+2. **Open ChatGPT in your browser** → Go to **Settings** (⚙️)
+3. **Go to "Apps & Connectors"**
+4. **Enable developer mode**:
+   - In **"Advanced Settings"**, enable **developer mode**
+   - Go back
+5. **Create a new application**:
+   - The **"Create"** button now appears in the top right
+   - Click on it
+   - Fill in the form:
+     - **Name**: "Scrapidou" (or another name)
+     - **Image**: Add an icon/image (optional)
+     - **Server URL**: `https://scrapidou.rankorr.red/mcp`
+     - **Authentication**: Select **"None"**
+   - Click **"Create"**
+6. **The application is now available** in ChatGPT
+
+---
+
+### For developers - Local installation
+
+```bash
+# 1. Clone the project
+git clone https://github.com/Shyzkanza/mcp-fetch-url.git
+cd mcp-fetch-url
+
+# 2. Install dependencies
+npm install
+
+# 3. Build
+npm run build
+
+# 4. Use locally
+npx @modelcontextprotocol/inspector node dist/index.js
+```
+
+---
+
+## 📂 Project Structure
+
+```
+mcp-fetch-url/
+├── src/
+│   ├── config.ts              # Configuration centralisée
+│   ├── types.ts               # Types TypeScript partagés
+│   ├── client/                # Client API abstractions (future)
+│   ├── tools/                 # MCP tools (future)
+│   ├── resources/             # Templates (future)
+│   ├── servers/
+│   │   ├── stdio.ts           # Serveur stdio (IDEs)
+│   │   └── http.ts            # Serveur HTTP (ChatGPT)
+│   ├── utils/
+│   │   └── errors.ts          # Gestion erreurs centralisée
+│   ├── index.ts               # Entry point stdio
+│   ├── http-server.ts         # Entry point HTTP
+│   └── http-client.ts         # Client npm
+├── dist/                      # Compiled code (generated)
+├── Dockerfile                 # Multi-stage Docker image
+├── docker-compose.yml         # Stack with Traefik labels
+├── package.json               # Server dependencies
+├── tsconfig.json              # TypeScript config
+└── README.md                  # This file
+```
+
+---
+
+## 🛠️ Available Commands
+
+```bash
+# Development
+npm run dev              # Dev mode with hot-reload (stdio)
+npm run dev:http         # Dev mode HTTP server
+
+# Production
+npm run build            # Compile TypeScript
+npm run start            # Start stdio server
+npm run start:http       # Start HTTP server (port 3000)
+```
+
+---
+
+## 🔧 Advanced Configuration
+
+### Environment variables
+
+Create a `.env` file:
+
+```bash
+PORT=3000                          # HTTP server port
+NODE_ENV=production                # Environment
+CORS_ORIGIN=*                      # CORS origin (default: * in dev, https://chatgpt.com in prod)
+```
+
+---
+
+## 🏗️ Architecture Details
+
+This project serves as a **template/base** for future MCP servers with a clean, modular architecture:
+
+### Separation of Concerns
+
+- **`config.ts`**: Environment variables, constants, validation
+- **`types.ts`**: Shared TypeScript interfaces
+- **`client/`**: External API abstraction (future)
+- **`tools/`**: Business logic (validation, transformation, formatting)
+- **`servers/`**: MCP implementation (stdio/HTTP), reuses tools
+- **`utils/errors.ts`**: Custom error classes, formatting
+
+See [CONTEXT.md](CONTEXT.md) for detailed architecture documentation.
+
+---
+
+## 📚 Resources & Documentation
+
+### Official documentation
+
+- [OpenAI Apps SDK](https://developers.openai.com/apps-sdk) - Complete ChatGPT Apps guide
+- [Apps SDK - MCP Server](https://developers.openai.com/apps-sdk/build/mcp-server) - Server config
+- [Model Context Protocol](https://modelcontextprotocol.io/) - MCP spec
+- [MCP SDK TypeScript](https://github.com/modelcontextprotocol/typescript-sdk) - Node.js SDK
+
+### Community
+
+- [MCP Servers Repository](https://github.com/modelcontextprotocol/servers) - Official examples
+- [OpenAI Apps Examples](https://github.com/openai/chatgpt-apps-examples) - App examples
+
+---
+
+## 🐛 Debugging & Troubleshooting
+
+### Server won't start
+
+```bash
+# Check that Node.js is installed
+node --version  # Must be 18+
+
+# Check that dependencies are installed
+npm install
+
+# Full rebuild
+npm run build
+```
+
+### CORS errors
+
+The server allows all origins in dev. In production, restrict in `src/servers/http.ts`:
+
+```typescript
+res.setHeader('Access-Control-Allow-Origin', 'https://chatgpt.com');
+```
+
+---
+
+## 🚀 Use This Project as a Template
+
+This project is a **complete template** for creating your own ChatGPT apps with a clean architecture.
+
+### To create your own app:
+
+1. **Duplicate this project**
+2. **Implement your tools** in `src/tools/`
+3. **Customize the configuration** in `src/config.ts`
+4. **Deploy**!
+
+---
+
+## 📝 License
+
+MIT - Use freely for your personal or commercial projects.
+
+---
+
+## 🙏 Credits & Attributions
+
+- **MCP Protocol** - [Anthropic](https://www.anthropic.com/)
+- **Apps SDK** - [OpenAI](https://openai.com/)
+
+---
+
+## 📞 Support
+
+For any questions:
+- 📖 Check the [Apps SDK documentation](https://developers.openai.com/apps-sdk)
+- 💬 Open an issue on GitHub
+
+---
+
+**Have fun with your ChatGPT app! 🕷️✨**
