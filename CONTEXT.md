@@ -142,6 +142,45 @@ mcp-fetch-url/
   - Description claire pour ChatGPT
   - Format de réponse optimisé
 
+---
+
+## 📝 Changelog
+
+### Version 1.0.2 (2025-01-27)
+
+**Documentation & Cleanup:**
+- ✅ Remove ChatGPT Apps SDK references (not used in this MCP)
+- ✅ Update tool descriptions to better guide LLM mode selection
+- ✅ Update README with deployment badges and status
+- ✅ Remove OPENAI_APPS_SDK_REFERENCE.md file
+- ✅ Align all version numbers to 1.0.2
+
+**Improvements:**
+- ✅ Enhanced tool descriptions to guide LLM in choosing appropriate extraction modes (light/standard/full)
+- ✅ Better documentation for ChatGPT integration
+
+### Version 1.0.1 (2025-11-25)
+
+**Features:**
+- ✅ Navigation links extraction (sidebar/menu links for documentation sites)
+- ✅ Three extraction modes: `light`, `standard`, `full`
+- ✅ Text content extraction (`contentText`) for LLM consumption
+- ✅ Improved content extraction with better fallback logic
+
+### Version 1.0.0 (2025-11-25)
+
+**Initial Release:**
+- ✅ Core `fetch_url` tool implementation
+- ✅ Content extraction with Readability + fallback
+- ✅ Issue detection (paywall, login, partial content)
+- ✅ Related links extraction
+- ✅ Metadata extraction
+- ✅ HTTP and stdio MCP servers
+- ✅ Docker deployment setup
+- ✅ GitHub Actions CI/CD
+
+---
+
 ### To Be Implemented (Future)
 
 - 🔜 Rate limiting par domaine
