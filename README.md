@@ -2,11 +2,14 @@
 
 Scrapidou is a clean, modular MCP server for web scraping and URL fetching.
 
-[![npm version](https://img.shields.io/badge/npm-v1.0.0-blue)](https://www.npmjs.com/package/@shyzus/mcp-scrapidou)
+[![Deploy Status](https://github.com/Shyzkanza/mcp-fetch-url/actions/workflows/deploy.yml/badge.svg)](https://github.com/Shyzkanza/mcp-fetch-url/actions/workflows/deploy.yml)
+[![npm version](https://img.shields.io/badge/npm-v1.0.2-blue)](https://www.npmjs.com/package/@shyzus/mcp-scrapidou)
+[![npm downloads](https://img.shields.io/npm/dm/@shyzus/mcp-scrapidou?cacheSeconds=3600)](https://www.npmjs.com/package/@shyzus/mcp-scrapidou)
+[![Website Status](https://img.shields.io/website?url=https%3A%2F%2Fscrapidou.rankorr.red%2Fhealth&label=API)](https://scrapidou.rankorr.red/health)
 ![Node](https://img.shields.io/badge/node-20%2B-green)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)
 ![MCP](https://img.shields.io/badge/MCP-2025--06--18-orange)
-![ChatGPT](https://img.shields.io/badge/ChatGPT-Apps%20SDK-purple)
+![ChatGPT](https://img.shields.io/badge/ChatGPT-MCP-purple)
 
 ---
 
@@ -59,11 +62,11 @@ ChatGPT will use the MCP server to fetch, extract, and return the content accord
 
 ---
 
-## 🏗️ Architecture: ChatGPT MCP App
+## 🏗️ Architecture: MCP Server
 
-### What is a ChatGPT App?
+### What is an MCP Server?
 
-**ChatGPT Apps** (via [Apps SDK](https://developers.openai.com/apps-sdk)) allow you to extend ChatGPT with:
+**MCP (Model Context Protocol)** servers allow you to extend ChatGPT and other LLMs with:
 - **Custom tools** (call external APIs)
 - **Real-time data** (up-to-date information)
 
@@ -83,7 +86,7 @@ ChatGPT will use the MCP server to fetch, extract, and return the content accord
 ### MCP Protocol
 
 MCP (Model Context Protocol) is an open standard created by Anthropic that allows LLMs to access external data and tools securely. It is used by:
-- ChatGPT (via Apps SDK)
+- ChatGPT (via MCP connectors)
 - Claude Desktop
 - Cursor
 - Other MCP clients
@@ -116,7 +119,7 @@ MCP (Model Context Protocol) is an open standard created by Anthropic that allow
 
 ### Use with ChatGPT
 
-A production server will be available soon!
+A production server is available and ready to use!
 
 **Server URL**: `https://scrapidou.rankorr.red/mcp`
 
@@ -248,15 +251,13 @@ See [CONTEXT.md](CONTEXT.md) for detailed architecture documentation.
 
 ### Official documentation
 
-- [OpenAI Apps SDK](https://developers.openai.com/apps-sdk) - Complete ChatGPT Apps guide
-- [Apps SDK - MCP Server](https://developers.openai.com/apps-sdk/build/mcp-server) - Server config
 - [Model Context Protocol](https://modelcontextprotocol.io/) - MCP spec
 - [MCP SDK TypeScript](https://github.com/modelcontextprotocol/typescript-sdk) - Node.js SDK
+- [ChatGPT Connectors](https://help.openai.com/en/articles/11487775-connectors-in-chatgpt) - How to use MCP with ChatGPT
 
 ### Community
 
 - [MCP Servers Repository](https://github.com/modelcontextprotocol/servers) - Official examples
-- [OpenAI Apps Examples](https://github.com/openai/chatgpt-apps-examples) - App examples
 
 ---
 
@@ -292,9 +293,9 @@ res.setHeader('Access-Control-Allow-Origin', 'https://chatgpt.com');
 
 ## 🚀 Use This Project as a Template
 
-This project is a **complete template** for creating your own ChatGPT apps with a clean architecture.
+This project is a **complete template** for creating your own MCP servers with a clean architecture.
 
-### To create your own app:
+### To create your own MCP server:
 
 1. **Duplicate this project**
 2. **Implement your tools** in `src/tools/`
@@ -312,16 +313,15 @@ MIT - Use freely for your personal or commercial projects.
 ## 🙏 Credits & Attributions
 
 - **MCP Protocol** - [Anthropic](https://www.anthropic.com/)
-- **Apps SDK** - [OpenAI](https://openai.com/)
 
 ---
 
 ## 📞 Support
 
 For any questions:
-- 📖 Check the [Apps SDK documentation](https://developers.openai.com/apps-sdk)
+- 📖 Check the [MCP documentation](https://modelcontextprotocol.io/)
 - 💬 Open an issue on GitHub
 
 ---
 
-**Have fun with your ChatGPT app! 🕷️✨**
+**Have fun with your MCP server! 🕷️✨**

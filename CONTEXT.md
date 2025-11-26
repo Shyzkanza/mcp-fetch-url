@@ -1,7 +1,7 @@
 # 🧠 CONTEXT - Scrapidou
 
-**Last update**: 2025-11-25
-**Status**: ✅ Tool `fetch_url` implemented and ready for testing
+**Last update**: 2025-01-27
+**Status**: ✅ Version 1.0.2 released - Production ready
 
 ---
 
@@ -362,7 +362,8 @@ Used by servers, client, tools
 ## 📚 Useful Resources
 
 - [Model Context Protocol](https://modelcontextprotocol.io/)
-- [OpenAI Apps SDK](https://developers.openai.com/apps-sdk)
+- [Model Context Protocol](https://modelcontextprotocol.io/)
+- [ChatGPT Connectors](https://help.openai.com/en/articles/11487775-connectors-in-chatgpt)
 - [Traefik Docs](https://doc.traefik.io/traefik/)
 - Portainer: https://portainer.rankorr.red/
 - **[SECRETS.md](SECRETS.md)**: GitHub secrets configuration for CI/CD with Portainer

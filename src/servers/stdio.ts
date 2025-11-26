@@ -21,7 +21,7 @@ export function createStdioServer(): Server {
   const server = new Server(
     {
       name: 'scrapidou',
-      version: '1.0.0',
+      version: '1.0.2',
     },
     {
       capabilities: {
@@ -37,7 +37,7 @@ export function createStdioServer(): Server {
         {
           name: 'fetch_url',
           description:
-            'fetch_url récupère et extrait le contenu d\'une page web avec différents niveaux de détail via le paramètre mode. Mode light pour des réponses légères, mode standard pour un contenu textuel détaillé, mode full pour le HTML complet. Ne pas l\'utiliser pour scraper automatiquement tous les liens d\'un site.\n\nModes:\n- light: Retourne uniquement metadata, contentText (texte nettoyé), et navigationLinks si demandé. Réponse la plus courte possible.\n- standard (default): Retourne metadata, contentText, relatedLinks, navigationLinks, et issues. Pas de HTML brut.\n- full: Inclut tout (contentHTML, contentText, relatedLinks, navigationLinks, metadata, issues). Pour usages avancés (analyse API, parsing, dev).\n\nOptions:\n- extractRelatedLinks (default: true): Extract contextual links like "See also", "Related articles", etc. Use for articles, blog posts, Wikipedia pages.\n- extractNavigationLinks (default: false): Extract links from sidebar/navigation menus. Use for documentation sites, technical docs, or structured websites.',
+            'Fetch and extract content from a web page with three extraction modes optimized for different use cases. Choose the mode based on the conversation context and information needs.\n\n**WHEN TO USE EACH MODE:**\n\n- **light**: Use for simple conversations when you only need a quick summary or basic information. Perfect for answering questions like "What is this page about?" or "Give me a brief overview". Returns only metadata (title, description) and clean text content. Fastest and most token-efficient.\n\n- **standard** (default): Use when you need complete information including links, images references, related articles, and issue detection. Perfect for detailed analysis, finding related content, checking for paywalls, or when the user asks about links, images, or wants to explore the page further. Returns metadata, full text content, related links, navigation links (if requested), and detected issues.\n\n- **full**: Use only for advanced technical use cases like parsing HTML structure, API development, or when you need the complete HTML markup. Returns everything including the full HTML content. Most token-intensive, use sparingly.\n\n**GUIDELINES:**\n- Start with **light** mode for simple questions or quick summaries\n- Switch to **standard** mode when the user asks about links, images, related content, or needs detailed information\n- Use **full** mode only for technical/development purposes\n- Do not use this tool to automatically scrape all links from a website',
           inputSchema: {
             type: 'object',
             properties: {
@@ -50,7 +50,7 @@ export function createStdioServer(): Server {
                 type: 'string',
                 enum: ['light', 'standard', 'full'],
                 description:
-                  'Extraction mode: light (minimal, text only), standard (text + links, default), full (HTML + all). Default: standard.',
+                  'Extraction mode. Use "light" for simple conversations and quick summaries. Use "standard" (default) when you need links, images, related content, or detailed information. Use "full" only for technical/development purposes. Default: standard.',
               },
               extractRelatedLinks: {
                 type: 'boolean',
