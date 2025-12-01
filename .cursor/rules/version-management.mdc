@@ -1,0 +1,58 @@
+# Gestion des Versions
+
+## 🚨 Règle Critique
+
+**TOUJOURS vérifier la cohérence des versions AVANT un commit.**
+
+## Fichiers à Synchroniser
+
+La version doit être identique dans :
+
+1. **`package.json`** - `"version": "X.Y.Z"`
+2. **`src/servers/http.ts`** - Dans `createMcpServer()` et `/health`
+3. **Branche git** - `release/X.Y.Z` doit correspondre à la version
+
+## Documentation à Vérifier
+
+Après changement de version ou fonctionnalités :
+
+- **`README.md`** - Vérifier que les exemples et la doc sont à jour
+  - ⚠️ **Badge version** : `[![npm version](https://img.shields.io/badge/npm-vX.Y.Z-blue)](https://www.npmjs.com/package/@shyzus/mcp-scrapidou)`
+- **`CONTEXT.md`** - Ajouter entrée changelog
+- **`COMMANDS.md`** - Si nouvelles commandes ajoutées
+
+## Checklist Pré-Commit
+
+```bash
+# Vérifier la cohérence
+grep -n '"version"' package.json | head -1
+grep -n "version:" src/servers/http.ts
+git branch --show-current
+```
+
+Les 3 valeurs doivent correspondre !
+
+## Quand Incrémenter
+
+| Type de changement | Incrément |
+|----|-----|
+| Fix mineur | Patch (1.0.X) |
+| Nouvelle feature | Minor (1.X.0) |
+| Breaking change | Major (X.0.0) |
+
+## Workflow Gitflow
+
+1. Créer `release/X.Y.Z` depuis `main`
+2. Développer sur la branche
+3. **AVANT merge** : vérifier que la version est à jour partout
+4. Merger avec `--squash` dans `main`
+5. Créer tag `X.Y.Z`
+
+## Commande Utile
+
+```bash
+# Vérifier toutes les versions d'un coup
+echo "Package: $(grep '"version"' package.json | head -1)" && \
+echo "HTTP Server: $(grep "version:" src/servers/http.ts | head -2)" && \
+echo "Branch: $(git branch --show-current)"
+```

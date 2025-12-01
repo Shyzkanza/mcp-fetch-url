@@ -1,0 +1,117 @@
+---
+description: Conventions TypeScript pour MCP Fetch URL
+globs: 
+  - src/**/*.ts
+alwaysApply: false
+---
+
+# Conventions TypeScript - MCP Fetch URL
+
+## Imports ESM
+
+```typescript
+// ✅ Extension .js obligatoire
+import { fetchUrl } from './tools/fetchUrl.js';
+import type { FetchResult, FetchOptions } from './types.js';
+
+// ❌ Pas d'extension
+import { fetchUrl } from './tools/fetchUrl';
+```
+
+## Types
+
+```typescript
+export interface FetchOptions {
+  url: string;
+  mode: 'light' | 'standard' | 'full';
+  extractRelatedLinks?: boolean;
+  extractNavigationLinks?: boolean;
+}
+
+export interface FetchResult {
+  title?: string;
+  description?: string;
+  content: string;
+  links?: Link[];
+  issues?: Issue[];
+}
+```
+
+## Gestion Erreurs
+
+```typescript
+import { InvalidInputError, NetworkError } from '../utils/errors.js';
+
+if (!params.url?.trim()) {
+  throw new InvalidInputError('URL is required');
+}
+
+try {
+  new URL(params.url);
+} catch {
+  throw new InvalidInputError('Invalid URL format');
+}
+```
+
+## Async/Await
+
+```typescript
+export async function handleFetchUrl(
+  params: FetchOptions
+): Promise<FetchResult> {
+  const response = await httpClient.fetch(params.url);
+  return extractContent(response, params.mode);
+}
+```
+
+## Null Safety
+
+```typescript
+const title = result?.title ?? 'Untitled';
+const links = result?.links ?? [];
+```
+
+## SDK MCP - McpServer vs Server
+
+### Utilisation de McpServer (Recommandé)
+
+Pour les serveurs MCP principaux et les proxies HTTP, utiliser `McpServer` :
+
+```typescript
+// ✅ BON - McpServer pour serveurs et proxies
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+
+const server = new McpServer({
+  name: 'my-app',
+  version: '1.0.0'
+});
+
+// Pour les proxies HTTP, accéder au Server sous-jacent si nécessaire
+server.server.setRequestHandler(/* ... */);
+```
+
+### Utilisation de Server (Cas avancés uniquement)
+
+`Server` est déprécié mais peut être utilisé pour des cas avancés avec `StreamableHTTPServerTransport` :
+
+```typescript
+// ⚠️ Cas avancé uniquement - Serveur HTTP avec transport personnalisé
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+
+// Utilisé dans src/servers/http.ts pour contrôle fin du transport
+const server = new Server(
+  { name: 'my-app', version: '1.0.0' },
+  { capabilities: { tools: {}, resources: {} } }
+);
+```
+
+**Règle** : Préférer `McpServer` sauf si besoin de contrôle fin sur le transport HTTP.
+
+## Checklist
+
+- [ ] Imports avec `.js`
+- [ ] `import type` pour types
+- [ ] Pas de `any`
+- [ ] Handlers async typés
+- [ ] Utiliser `McpServer` sauf cas avancés nécessitant `Server`

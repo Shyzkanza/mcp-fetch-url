@@ -1,0 +1,73 @@
+---
+description: Structure des réponses d'outils MCP
+globs: 
+  - src/tools/**/*.ts
+alwaysApply: false
+---
+
+# OpenAI Apps SDK - Structure des Réponses
+
+## Anatomie d'une Réponse Tool
+
+```typescript
+{
+  content: [{
+    type: 'text',
+    text: 'Markdown narration'
+  }],
+
+  structuredContent: {
+    type: 'urlContent',
+    summary: 'Contenu de la page',
+    items: [/* données concises */]
+  },
+
+  _meta: {
+    fullHtml: {/* contenu complet */}
+  }
+}
+```
+
+## Les 3 Parties
+
+### 1. `content` - Narration
+
+```typescript
+content: [{
+  type: 'text',
+  text: `## Contenu de example.com
+  
+📄 Titre: Example Domain
+📝 Description: This domain is for use in examples...`
+}]
+```
+
+### 2. `structuredContent` - Données légères
+
+```typescript
+structuredContent: {
+  type: 'webpage',
+  url: 'https://example.com',
+  title: 'Example Domain',
+  description: 'This domain is for use in examples',
+  links: [/* top 5 liens */]
+}
+```
+
+**Règles**: < 4k tokens, essentiel uniquement
+
+### 3. `_meta` - Données riches
+
+```typescript
+_meta: {
+  fullContent: '...', // HTML complet
+  allLinks: [...],    // Tous les liens
+  images: [...]       // Toutes les images
+}
+```
+
+## Checklist Réponse
+
+- [ ] `content` résumé markdown
+- [ ] `structuredContent` léger
+- [ ] Contenu complet dans `_meta`

@@ -3,7 +3,7 @@
 Scrapidou is a clean, modular MCP server for web scraping and URL fetching.
 
 [![Deploy Status](https://github.com/Shyzkanza/mcp-fetch-url/actions/workflows/deploy.yml/badge.svg)](https://github.com/Shyzkanza/mcp-fetch-url/actions/workflows/deploy.yml)
-[![npm version](https://img.shields.io/badge/npm-v1.0.2-blue)](https://www.npmjs.com/package/@shyzus/mcp-scrapidou)
+[![npm version](https://img.shields.io/badge/npm-v1.0.3-blue)](https://www.npmjs.com/package/@shyzus/mcp-scrapidou)
 [![npm downloads](https://img.shields.io/npm/dm/@shyzus/mcp-scrapidou?cacheSeconds=3600)](https://www.npmjs.com/package/@shyzus/mcp-scrapidou)
 [![Website Status](https://img.shields.io/website?url=https%3A%2F%2Fscrapidou.rankorr.red%2Fhealth&label=API)](https://scrapidou.rankorr.red/health)
 ![Node](https://img.shields.io/badge/node-20%2B-green)
@@ -39,7 +39,7 @@ This application allows **ChatGPT** and other MCP clients to fetch and scrape we
 - 🧭 **Navigation Links** - Extract sidebar/menu links for documentation sites (optional)
 - 📊 **Metadata Extraction** - Extract title, description, author, and publication date
 - 🏗️ **Modular Architecture** - Clean separation of concerns, reusable for future projects
-- 🔌 **Dual Mode** - Works with ChatGPT (HTTP) and IDEs (stdio)
+- 🔌 **Dual Mode** - Works with ChatGPT (Streamable HTTP) and IDEs (stdio)
 
 ### 💬 Usage example
 
@@ -79,7 +79,7 @@ ChatGPT will use the MCP server to fetch, extract, and return the content accord
 └─────────────┘         └──────────────┘         └──────────────┘
 ```
 
-1. **ChatGPT** calls your MCP server via the [Model Context Protocol](https://modelcontextprotocol.io/)
+1. **ChatGPT** connects via **Streamable HTTP** to `/mcp` (GET/POST)
 2. **The MCP server** fetches data from the target URL
 3. **The results** are returned to ChatGPT
 
@@ -138,6 +138,7 @@ A production server is available and ready to use!
      - **Name**: "Scrapidou" (or another name)
      - **Image**: Add an icon/image (optional)
      - **Server URL**: `https://scrapidou.rankorr.red/mcp`
+     - **Note**: The server uses **Streamable HTTP** transport (modern MCP standard)
      - **Authentication**: Select **"None"**
    - Click **"Create"**
 6. **The application is now available** in ChatGPT
@@ -177,7 +178,7 @@ mcp-fetch-url/
 │   ├── resources/             # Templates (future)
 │   ├── servers/
 │   │   ├── stdio.ts           # Serveur stdio (IDEs)
-│   │   └── http.ts            # Serveur HTTP (ChatGPT)
+│   │   └── http.ts            # Serveur Streamable HTTP (ChatGPT)
 │   ├── utils/
 │   │   ├── errors.ts          # Gestion erreurs centralisée
 │   │   ├── contentExtractor.ts # Extraction contenu (Readability + fallback) + text extraction
@@ -200,16 +201,42 @@ mcp-fetch-url/
 
 ## 🛠️ Available Commands
 
-```bash
-# Development
-npm run dev              # Dev mode with hot-reload (stdio)
-npm run dev:http         # Dev mode HTTP server
+> 📖 **Full documentation**: [COMMANDS.md](./COMMANDS.md)
 
-# Production
+### Quick Reference
+
+```bash
+# 🌟 Recommended for ChatGPT development (2 terminals)
+npm run tunnel           # Terminal 1: ngrok (keep running)
+npm run dev              # Terminal 2: Dev server with hot-reload
+
+# Alternative: All-in-one
+npm run dev:tunnel       # Dev + ngrok in parallel
+
+# Testing
+npm run inspect          # Launch MCP Inspector
+npm run health           # Health check
+
+# Build & Production
 npm run build            # Compile TypeScript
-npm run start            # Start stdio server
-npm run start:http       # Start HTTP server (port 3000)
+npm run rebuild          # Clean + Build
+npm run build:start      # Build then start
+
+# Utilities
+npm run kill             # Kill process on port 3000
+npm run kill:tunnel      # Kill ngrok
 ```
+
+### Cursor Commands
+
+Available via **Cmd+Shift+P**:
+- `dev-server` - Dev with hot-reload (recommended)
+- `tunnel-only` - Launch ngrok (keep running)
+- `mcp-inspector` - Launch MCP Inspector
+- `build` / `rebuild` / `clean`
+- `kill-server` / `kill-tunnel`
+
+See [COMMANDS.md](./COMMANDS.md) for the complete list.
 
 ---
 
@@ -240,7 +267,7 @@ This project serves as a **template/base** for future MCP servers with a clean, 
 - **`utils/contentExtractor.ts`**: Content extraction (Readability + fallback)
 - **`utils/issueDetector.ts`**: Issue detection (paywall, login, partial content)
 - **`utils/linkExtractor.ts`**: Related links extraction and filtering
-- **`servers/`**: MCP implementation (stdio/HTTP), reuses tools
+- **`servers/`**: MCP implementation (stdio/Streamable HTTP), reuses tools
 - **`utils/errors.ts`**: Custom error classes, formatting
 
 See [CONTEXT.md](CONTEXT.md) for detailed architecture documentation.
@@ -248,6 +275,12 @@ See [CONTEXT.md](CONTEXT.md) for detailed architecture documentation.
 ---
 
 ## 📚 Resources & Documentation
+
+### Project Documentation
+
+- [CONTEXT.md](./CONTEXT.md) - Project memory (status, decisions, changelog)
+- [COMMANDS.md](./COMMANDS.md) - All npm scripts and Cursor commands
+- [OPENAI_APPS_SDK_REFERENCE.md](./OPENAI_APPS_SDK_REFERENCE.md) - Complete SDK reference guide
 
 ### Official documentation
 

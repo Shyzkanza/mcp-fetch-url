@@ -1,0 +1,88 @@
+---
+description: Règles principales pour le développement MCP ChatGPT Apps SDK
+globs: 
+alwaysApply: true
+---
+
+# OpenAI Apps SDK - Règles Principales
+
+> Ce projet utilise le SDK OpenAI Apps pour créer une application MCP compatible ChatGPT.
+> Documentation de référence: `OPENAI_APPS_SDK_REFERENCE.md`
+
+## Points Critiques à Retenir
+
+### Structure des Réponses
+
+| Partie | Visibilité | Usage |
+|--------|-----------|-------|
+| `content` | Modèle + User | Narration markdown, fallback |
+| `structuredContent` | Modèle + Widget | Données LÉGÈRES (< 4k tokens) |
+| `_meta` | Widget ONLY | Données riches, jamais vu par modèle |
+
+### Annotations Obligatoires
+
+```typescript
+annotations: {
+  readOnlyHint: true,      // Lecture seule → skip confirmations
+  destructiveHint: false,  // true si delete/overwrite
+  openWorldHint: false     // true si publication publique
+}
+```
+
+## Règles de Développement
+
+### Tools (`src/tools/`)
+
+1. **Nommage**: Format `domain.action` (ex: `fetch.get_url`)
+2. **Description**: TOUJOURS "Use this when..." + "Do NOT use for..."
+3. **Annotations**: TOUJOURS spécifier les 3 hints
+4. **Validation**: TOUJOURS valider les entrées server-side
+5. **Idempotence**: Tools read-only doivent être safe to retry
+
+### Réponses
+
+1. **`structuredContent`**: Garder LÉGER (< 4k tokens)
+2. **`_meta`**: Données volumineuses/sensibles ici uniquement
+3. **`content`**: Résumé markdown lisible
+
+## Commandes Utiles
+
+```bash
+# Workflow recommandé
+npm run tunnel           # Terminal 1: ngrok
+npm run dev              # Terminal 2: dev server
+
+# Build + start
+npm run build:start
+
+# Kill le serveur
+npm run kill
+
+# MCP Inspector
+npm run inspect
+
+# Health check
+npm run health
+```
+
+## Checklist Avant Commit
+
+### Nouveau Tool
+- [ ] Nom format `domain.action`
+- [ ] Description "Use this when..." + "Do NOT use for..."
+- [ ] `inputSchema` avec descriptions
+- [ ] `annotations` (readOnlyHint, destructiveHint, openWorldHint)
+- [ ] Validation entrées server-side
+- [ ] Types TypeScript
+- [ ] Gestion erreurs
+
+### Réponse Tool
+- [ ] `content` avec résumé markdown
+- [ ] `structuredContent` léger (< 4k tokens)
+- [ ] Données volumineuses dans `_meta`
+- [ ] Pas de données sensibles dans `content`/`structuredContent`
+
+## Ressources
+
+- **Documentation SDK**: `OPENAI_APPS_SDK_REFERENCE.md`
+- **MCP Protocol**: https://modelcontextprotocol.io/

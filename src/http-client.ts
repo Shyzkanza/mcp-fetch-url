@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
   CallToolRequestSchema,
@@ -11,18 +11,10 @@ import {
 const SERVER_URL = process.argv[2] || 'https://scrapidou.rankorr.red/mcp';
 
 // Proxy HTTP MCP server to stdio for Cursor
-const server = new Server(
-  {
-    name: 'scrapidou-http-proxy',
-    version: '1.0.0',
-  },
-  {
-    capabilities: {
-      tools: {},
-      resources: {},
-    },
-  }
-);
+const server = new McpServer({
+  name: 'scrapidou-http-proxy',
+  version: '1.0.3',
+});
 
 // Forward all requests to HTTP server
 async function forwardRequest(method: string, params?: any) {
@@ -51,22 +43,22 @@ async function forwardRequest(method: string, params?: any) {
 }
 
 // List tools
-server.setRequestHandler(ListToolsRequestSchema, async () => {
+server.server.setRequestHandler(ListToolsRequestSchema, async () => {
   return await forwardRequest('tools/list');
 });
 
 // Call tool
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
+server.server.setRequestHandler(CallToolRequestSchema, async (request) => {
   return await forwardRequest('tools/call', request.params);
 });
 
 // List resources
-server.setRequestHandler(ListResourcesRequestSchema, async () => {
+server.server.setRequestHandler(ListResourcesRequestSchema, async () => {
   return await forwardRequest('resources/list');
 });
 
 // Read resource
-server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+server.server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
   return await forwardRequest('resources/read', request.params);
 });
 
@@ -78,4 +70,3 @@ async function main() {
 }
 
 main().catch(console.error);
-

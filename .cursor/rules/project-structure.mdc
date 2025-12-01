@@ -1,0 +1,54 @@
+---
+description: Structure du projet MCP Fetch URL
+globs: 
+  - src/**/*.ts
+alwaysApply: false
+---
+
+# Structure du Projet MCP Fetch URL
+
+## Architecture
+
+```
+mcp-fetch-url/
+├── src/
+│   ├── index.ts               # Entry point
+│   ├── types.ts               # Types partagés
+│   ├── config.ts              # Configuration
+│   ├── http-server.ts         # Serveur HTTP
+│   ├── http-client.ts         # Client npm
+│   ├── client/                # Clients HTTP
+│   │   └── httpClient.ts
+│   ├── tools/                 # Tools MCP
+│   │   └── fetchUrl.ts
+│   ├── servers/
+│   │   └── http.ts
+│   └── utils/
+│       └── errors.ts
+├── dist/
+├── package.json
+└── tsconfig.json
+```
+
+## Conventions
+
+### Fichiers
+
+| Type | Convention | Exemple |
+|------|------------|---------|
+| Tool | `{action}.ts` | `fetchUrl.ts` |
+| Client | `{name}Client.ts` | `httpClient.ts` |
+
+### Imports
+
+```typescript
+// Extension .js obligatoire
+import { fetchUrl } from './tools/fetchUrl.js';
+import type { FetchResult } from './types.js';
+```
+
+## Checklist
+
+- [ ] Imports avec `.js`
+- [ ] Types dans `types.ts`
+- [ ] Validation dans handlers

@@ -1,0 +1,61 @@
+---
+description: Sécurité et bonnes pratiques
+globs: 
+  - src/**/*.ts
+alwaysApply: false
+---
+
+# OpenAI Apps SDK - Sécurité
+
+## Principes
+
+1. **Least Privilege** – Permissions minimales
+2. **Defense in Depth** – Valider tout
+
+## Annotations de Sécurité
+
+```typescript
+// Tool lecture seule (fetch)
+annotations: {
+  readOnlyHint: true,
+  destructiveHint: false,
+  openWorldHint: false
+}
+```
+
+## Validation des Entrées
+
+```typescript
+async function handleTool(params: ToolInput) {
+  if (!params.url?.trim()) {
+    throw new InvalidInputError('URL is required');
+  }
+
+  // Valider format URL
+  try {
+    new URL(params.url);
+  } catch {
+    throw new InvalidInputError('Invalid URL format');
+  }
+
+  // Bloquer les URLs dangereuses
+  const url = new URL(params.url);
+  if (url.protocol === 'file:') {
+    throw new InvalidInputError('File URLs are not allowed');
+  }
+}
+```
+
+## URLs à Bloquer
+
+- `file://` - Accès fichiers locaux
+- `localhost`, `127.0.0.1` - Réseau local
+- IPs privées (10.x, 192.168.x, etc.)
+
+## Checklist Sécurité
+
+- [ ] `annotations` correctes
+- [ ] Validation URL server-side
+- [ ] URLs dangereuses bloquées
+- [ ] Timeout sur les requêtes
+- [ ] Taille de réponse limitée

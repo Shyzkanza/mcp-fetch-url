@@ -1,7 +1,7 @@
 # 🧠 CONTEXT - Scrapidou
 
-**Last update**: 2025-01-27
-**Status**: ✅ Version 1.0.2 released - Production ready
+**Last update**: 2025-12-01
+**Status**: ✅ Streamable HTTP transport migrated - Production ready
 
 ---
 
@@ -26,7 +26,7 @@
   - **`utils/contentExtractor.ts`**: Content extraction using Readability + fallback
   - **`utils/issueDetector.ts`**: Issue detection (paywall, login, partial content)
   - **`utils/linkExtractor.ts`**: Related links extraction and filtering
-  - **`servers/`**: MCP implementation (stdio/HTTP), reuses tools
+  - **`servers/`**: MCP implementation (stdio/HTTP Streamable), reuses tools
   - **`utils/errors.ts`**: Custom error classes, formatting
   - **Entry points**: Thin wrappers that delegate to servers
 
@@ -141,6 +141,82 @@ mcp-fetch-url/
   - Tool enregistré dans serveurs stdio et HTTP
   - Description claire pour ChatGPT
   - Format de réponse optimisé
+
+---
+
+## 📝 Changelog
+
+### v1.0.3 - 2025-12-01 - Migration vers Streamable HTTP
+
+**Infrastructure**
+- ✅ Migration complète vers Streamable HTTP Transport (remplace JSON-RPC custom)
+- ✅ Utilisation du SDK MCP officiel (`Server` + `StreamableHTTPServerTransport`)
+- ✅ Endpoint unifié `/mcp` (GET/POST) au lieu de endpoints séparés
+- ✅ Support garanti de `structuredContent` pour les widgets ChatGPT
+- ✅ Mode stateless (pas de gestion de sessions pour simplicité)
+
+**Technical Changes**
+- ✅ Refactorisation complète de `src/servers/http.ts`
+- ✅ Utilisation de `Server.setRequestHandler` pour les handlers MCP
+- ✅ Migration du tool vers le format SDK (`ListToolsRequest`, `CallToolRequest`)
+- ✅ Conservation de la logique métier existante (`fetchUrl.ts` inchangé)
+
+**Fixes**
+- ✅ Correction dépréciation `Server` → `McpServer` dans `http-client.ts`
+- ✅ Utilisation de `McpServer` pour le proxy HTTP client
+- ✅ Accès au `Server` sous-jacent via `server.server.setRequestHandler()`
+- ✅ Fix "Connector is not safe" ChatGPT :
+  - Renommage tool `fetch.get_url` → `fetch_url` (snake_case simple)
+  - Simplification description (courte, sans markdown complexe)
+  - Polyfill `File` pour Node.js < 20.5 (undici/cheerio)
+
+**Documentation**
+- ✅ Mise à jour README badge version
+- ✅ Mise à jour CONTEXT.md (changelog, architecture, status)
+- ✅ Ajout section "McpServer vs Server" dans typescript-conventions.mdc (si existe)
+
+**Infrastructure**
+- ✅ Version synchronisée: package.json, http.ts, http-client.ts
+- ✅ SDK MCP mis à jour: `^1.0.4` → `^1.23.0`
+
+---
+
+## 📝 Changelog (ancien)
+
+### Version 1.0.2 (2025-01-27)
+
+**Documentation & Cleanup:**
+- ✅ Remove ChatGPT Apps SDK references (not used in this MCP)
+- ✅ Update tool descriptions to better guide LLM mode selection
+- ✅ Update README with deployment badges and status
+- ✅ Remove OPENAI_APPS_SDK_REFERENCE.md file
+- ✅ Align all version numbers to 1.0.2
+
+**Improvements:**
+- ✅ Enhanced tool descriptions to guide LLM in choosing appropriate extraction modes (light/standard/full)
+- ✅ Better documentation for ChatGPT integration
+
+### Version 1.0.1 (2025-11-25)
+
+**Features:**
+- ✅ Navigation links extraction (sidebar/menu links for documentation sites)
+- ✅ Three extraction modes: `light`, `standard`, `full`
+- ✅ Text content extraction (`contentText`) for LLM consumption
+- ✅ Improved content extraction with better fallback logic
+
+### Version 1.0.0 (2025-11-25)
+
+**Initial Release:**
+- ✅ Core `fetch_url` tool implementation
+- ✅ Content extraction with Readability + fallback
+- ✅ Issue detection (paywall, login, partial content)
+- ✅ Related links extraction
+- ✅ Metadata extraction
+- ✅ HTTP and stdio MCP servers
+- ✅ Docker deployment setup
+- ✅ GitHub Actions CI/CD
+
+---
 
 ### To Be Implemented (Future)
 

@@ -1,0 +1,59 @@
+---
+description: Maintien du fichier CONTEXT.md - Mémoire du projet
+globs: 
+alwaysApply: true
+---
+
+# Maintenance du CONTEXT.md
+
+> Le fichier `CONTEXT.md` est la **mémoire du projet**. Il doit être mis à jour régulièrement.
+
+## 🚨 Quand mettre à jour CONTEXT.md
+
+### Obligatoire (avant commit)
+
+- [ ] **Nouveau tool implémenté** → Mettre à jour "Ce qui est implémenté" + "À implémenter"
+- [ ] **Décision technique importante** → Ajouter dans "Décisions Clés"
+- [ ] **Changement d'architecture** → Mettre à jour "Structure du Projet"
+- [ ] **Release/version** → Ajouter entrée dans "Changelog"
+
+### Recommandé
+
+- Fin de session de travail significative
+- Après résolution d'un bug complexe
+- Après ajout de nouvelles fonctionnalités
+
+## 📋 Sections à vérifier
+
+### 1. Header
+```markdown
+**Dernière mise à jour** : YYYY-MM-DD  ← Mettre à jour !
+**Status** : 🚧 En développement | ✅ Production ready
+```
+
+### 2. Structure du Projet
+- Utiliser les emojis de status : ✅ Fait | 🔜 À faire | 🚧 En cours | ❌ Abandonné
+- Ajouter les nouveaux fichiers/dossiers
+
+### 3. Ce qui est implémenté
+- Cocher les items terminés
+- Déplacer de "À implémenter" vers "Implémenté"
+
+### 4. À implémenter
+- Mettre à jour les priorités
+- Ajouter les nouvelles tâches identifiées
+
+### 5. Changelog
+
+```markdown
+### vX.Y.Z - YYYY-MM-DD (Titre court)
+
+**Catégorie**
+- ✅ Description du changement
+```
+
+## ⚠️ Ne pas oublier
+
+- Le CONTEXT.md est lu par l'IA pour comprendre le projet
+- Des infos obsolètes = suggestions obsolètes
+- Un CONTEXT.md à jour = meilleure assistance

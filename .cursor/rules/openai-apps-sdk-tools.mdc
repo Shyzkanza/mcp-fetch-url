@@ -1,0 +1,73 @@
+---
+description: Convention pour les tools MCP
+globs: 
+  - src/tools/**/*.ts
+alwaysApply: false
+---
+
+# OpenAI Apps SDK - Convention Tools MCP
+
+## Structure d'un Tool
+
+```typescript
+{
+  name: 'fetch_url',
+  title: 'Fetch URL',
+  description: 'Use this when the user wants to fetch content from a URL. Do NOT use for scraping all links.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      url: {
+        type: 'string',
+        description: 'URL to fetch (must be http:// or https://)'
+      },
+      mode: {
+        type: 'string',
+        enum: ['light', 'standard', 'full'],
+        description: 'Extraction mode'
+      }
+    },
+    required: ['url']
+  },
+  annotations: {
+    readOnlyHint: true
+  }
+}
+```
+
+## Règles de Nommage
+
+- ✅ Format snake_case simple : `fetch_url` (pas de point pour éviter les erreurs ChatGPT)
+- ✅ Description courte "Use this when..." + "Do NOT use for..."
+
+## InputSchema
+
+```typescript
+inputSchema: {
+  type: 'object',
+  properties: {
+    url: {
+      type: 'string',
+      description: 'URL to fetch (http:// or https://)'
+    },
+    mode: {
+      type: 'string',
+      enum: ['light', 'standard', 'full'],
+      description: 'light=summary, standard=content+links, full=HTML'
+    },
+    extractRelatedLinks: {
+      type: 'boolean',
+      description: 'Extract related links (default: true)'
+    }
+  },
+  required: ['url']
+}
+```
+
+## Checklist Tool
+
+- [ ] Nom `domain.action`
+- [ ] Description "Use this when..."
+- [ ] `inputSchema` avec descriptions
+- [ ] `annotations` configurées
+- [ ] Validation server-side
