@@ -3,7 +3,7 @@
 Scrapidou is a clean, modular MCP server for web scraping and URL fetching.
 
 [![Deploy Status](https://github.com/Shyzkanza/mcp-fetch-url/actions/workflows/deploy.yml/badge.svg)](https://github.com/Shyzkanza/mcp-fetch-url/actions/workflows/deploy.yml)
-[![npm version](https://img.shields.io/badge/npm-v1.0.3-blue)](https://www.npmjs.com/package/@shyzus/mcp-scrapidou)
+[![npm version](https://img.shields.io/badge/npm-v1.1.0-blue)](https://www.npmjs.com/package/@shyzus/mcp-scrapidou)
 [![npm downloads](https://img.shields.io/npm/dm/@shyzus/mcp-scrapidou?cacheSeconds=3600)](https://www.npmjs.com/package/@shyzus/mcp-scrapidou)
 [![Website Status](https://img.shields.io/website?url=https%3A%2F%2Fscrapidou.rankorr.red%2Fhealth&label=API)](https://scrapidou.rankorr.red/health)
 ![Node](https://img.shields.io/badge/node-20%2B-green)
@@ -31,7 +31,7 @@ This application allows **ChatGPT** and other MCP clients to fetch and scrape we
 ### ✨ Features
 
 - 🌐 **URL Fetching** - Retrieve content from any URL with proper headers and redirect handling
-- 📄 **Flexible Extraction Modes** - Three modes: `light` (metadata + text only), `standard` (text + links + issues), `full` (HTML + all)
+- 📄 **Flexible Extraction** - Control content format (`text`, `html`, `both`), size (`maxContentLength`), issue detection, and link extraction independently
 - 📝 **Text Content Extraction** - Clean text extraction without HTML tags for LLM consumption
 - 🎨 **HTML Content Extraction** - Full HTML content preservation in `full` mode (formatting, images, citations)
 - 🔍 **Issue Detection** - Automatically detect paywalls, login requirements, and partial content
@@ -49,16 +49,188 @@ In ChatGPT, simply ask:
 
 Or:
 
-> "Extract the main content from https://blog.example.com/article in light mode"
+> "Extract the main content from https://blog.example.com/article with a 500 character limit"
 
 Or:
 
 > "Get the full HTML content from https://docs.example.com/page"
 
-ChatGPT will use the MCP server to fetch, extract, and return the content according to the selected mode:
-- **Light mode**: Fast, minimal response (metadata + text only)
-- **Standard mode**: Complete text content with related links and issues (default)
-- **Full mode**: Everything including HTML for advanced use cases
+ChatGPT will use the MCP server to fetch, extract, and return the content according to the selected parameters:
+- **Content format**: Choose between `text` (clean text, default), `html` (full HTML), or `both`
+- **Content size control**: Use `maxContentLength` for quick mapping (500-1000 chars) or leave `undefined` for complete analysis
+- **Issue detection**: Control with `detectIssues` parameter (default: `true`)
+- **Link extraction**: Configure `extractRelatedLinks` and `extractNavigationLinks` independently
+
+---
+
+## 📖 Use Cases & Content Extraction
+
+### What is extracted?
+
+The tool extracts two types of content, and you can choose which one(s) to return:
+
+1. **`contentText`** (Text content)
+   - **What it is**: Clean, readable text extracted from the main content of the page
+   - **How it's extracted**: 
+     - Uses Mozilla Readability algorithm to identify the main content
+     - Removes HTML tags, scripts, styles
+     - Cleans up whitespace and formatting
+     - Preserves paragraph structure
+   - **Available when**: `contentFormat: 'text'` or `contentFormat: 'both'` (default: `'text'`)
+   - **Use case**: Perfect for LLM consumption, summarization, analysis
+   - **No size limit**: Full content is returned in `structuredContent.contentText`
+
+2. **`contentHTML`** (HTML content)
+   - **What it is**: Full HTML of the main content area (preserves formatting, structure)
+   - **How it's extracted**:
+     - Uses Mozilla Readability to extract the main content HTML
+     - Preserves HTML structure, images, links, formatting
+     - Removes navigation, headers, footers, ads
+   - **Available when**: `contentFormat: 'html'` or `contentFormat: 'both'`
+   - **Use case**: Technical analysis, preserving formatting, advanced processing
+   - **Size control**: Use `maxContentLength` to limit extraction (default: no limit - full HTML)
+   - **Note**: When `contentFormat` is `'html'` or `'both'`, the tool automatically extracts HTML internally
+
+
+---
+
+### Response Structure
+
+All responses follow this structure:
+
+```typescript
+{
+  // 1. Summary (markdown text visible to user and model)
+  content: [{
+    type: 'text',
+    text: '📄 Content extracted from: https://example.com\n...'
+  }],
+  
+  // 2. Structured data (accessible by ChatGPT)
+  structuredContent: {
+    type: 'webpage',
+    url: 'https://example.com',
+    contentFormat: 'text', // 'text' | 'html' | 'both'
+    maxContentLength: undefined, // Optional: limit content size (undefined = no limit)
+    metadata: { title, description, author, publishedDate },
+    contentText: '...', // Text content (truncated if maxContentLength specified)
+    contentHTML: '...', // HTML content (if contentFormat: 'html' or 'both')
+    issues: [{ type: 'paywall', message: '...' }], // Empty array if detectIssues: false
+    relatedLinks: [{ url, text, type }], // All links (no limit)
+    navigationLinks: [{ url, text, level }], // All links (no limit)
+    contentTextLength: 1234, // Original full length
+    contentTextExtractedLength: 1234, // Actual extracted length
+    contentTextTruncated: false, // true if truncated
+    contentHTMLLength: 5678, // Original full length (if HTML present)
+    contentHTMLExtractedLength: 5678, // Actual extracted length (if HTML present)
+    contentHTMLTruncated: false // true if truncated (if HTML present)
+  }
+}
+```
+
+### Decision Matrix
+
+| Use Case | `contentFormat` | `maxContentLength` | `detectIssues` | `extractRelatedLinks` | `extractNavigationLinks` |
+|----------|----------------|-------------------|----------------|----------------------|--------------------------|
+| Quick mapping/summary | `text` | `500-1000` | `false` | `false` | `false` |
+| Article/blog post | `text` | `undefined` (full) | `true` (default) | `true` (default) | `false` |
+| Wikipedia page | `text` | `undefined` (full) | `true` (default) | `true` (default) | `false` |
+| Documentation site | `text` | `undefined` (full) | `true` (default) | `false` | `true` |
+| Need HTML content | `html` | `undefined` (full) | `true` (default) | `true` (default) | `true` (if needed) |
+| Need both text & HTML | `both` | `undefined` (full) | `true` (default) | `true` (default) | `true` (if needed) |
+| Technical analysis | `html` | `undefined` (full) | `true` (default) | `false` | `true` |
+| Preview/quick read | `text` | `2000-5000` | `true` (default) | `true` (default) | `false` |
+
+**Notes**:
+- When `contentFormat` is `'html'` or `'both'`, the tool automatically extracts HTML internally.
+- Use `maxContentLength` for quick mapping/summaries (500-1000 chars) or previews (2000-5000 chars). Leave `undefined` for complete analysis.
+- Set `detectIssues: false` for faster extraction when you know the content is freely accessible.
+
+### Parameters
+
+#### `contentFormat` - Content Type
+
+Controls what type of content is returned:
+
+- **`contentFormat: 'text'`** (default)
+  - Returns `structuredContent.contentText` with text content
+  - Perfect for LLM analysis, summarization, general understanding
+  - Available in all modes
+
+- **`contentFormat: 'html'`**
+  - Returns `structuredContent.contentHTML` with HTML content
+  - Automatically extracts HTML internally
+  - Preserves formatting, structure, images, links
+  - Best for technical analysis, preserving document structure
+
+- **`contentFormat: 'both'`**
+  - Returns both `structuredContent.contentText` and `structuredContent.contentHTML`
+  - Automatically extracts HTML internally
+  - Use when you need both formats for different purposes
+
+#### `maxContentLength` - Content Size Control
+
+Controls the maximum number of characters to extract (applies to both text and HTML):
+
+- **`maxContentLength: undefined`** (default - no limit)
+  - Extracts complete content without any truncation
+  - Use for complete analysis, deep understanding, or when you need all information
+  - Best for thorough content analysis
+
+- **`maxContentLength: 500-1000`**
+  - Quick mapping or brief summaries
+  - Use for getting a quick overview of the content
+  - Good for previews or when you only need the beginning
+
+- **`maxContentLength: 2000-5000`**
+  - Detailed previews or extended summaries
+  - Use when you need more context but not the full content
+  - Good balance between completeness and token usage
+
+**Important**: The content is truncated at the specified limit if longer. The response includes:
+- `contentTextTruncated` / `contentHTMLTruncated`: `true` if content was truncated
+- `contentTextLength` / `contentHTMLLength`: Original full length
+- `contentTextExtractedLength` / `contentHTMLExtractedLength`: Actual extracted length
+
+#### `detectIssues` - Issue Detection
+
+Controls whether to detect issues on the page:
+
+- **`detectIssues: true`** (default)
+  - Analyzes the page to detect paywalls, login requirements, or partial content
+  - Use for general use cases when you want to know if there are access issues
+  - Adds a small processing overhead
+
+- **`detectIssues: false`**
+  - Skips issue detection for faster extraction
+  - Use when you know the content is freely accessible
+  - Best for quick mapping or when you don't need issue information
+
+### Content Extraction Details
+
+**Text Content (`contentText`)**:
+- Extracted using Mozilla Readability algorithm
+- Removes HTML tags, scripts, styles, ads
+- Preserves paragraph structure
+- Cleaned whitespace and formatting
+- **Available when**: `contentFormat: 'text'` or `'both'`
+- **Size control**: Use `maxContentLength` to limit extraction (default: no limit - full content)
+
+**HTML Content (`contentHTML`)**:
+- Extracted using Mozilla Readability algorithm
+- Preserves HTML structure, images, links, formatting
+- Removes navigation, headers, footers, ads
+- **Available when**: `contentFormat: 'html'` or `'both'`
+- **Size control**: Use `maxContentLength` to limit extraction (default: no limit - full HTML)
+- **Automatic mode**: When `contentFormat` is `'html'` or `'both'`, the tool uses `mode: 'full'` internally
+
+### Important Notes
+
+- **No widget**: This tool doesn't use widgets, so all content is directly accessible in `structuredContent`
+- **Flexible size control**: Use `maxContentLength` for quick mapping (500-1000 chars) or leave `undefined` for complete analysis
+- **All links included**: Related links and navigation links are returned in full (no limits)
+- **No `_meta` complexity**: Since there's no widget, we don't need complex `_meta` structures
+- **Truncation indicators**: When `maxContentLength` is used, the response includes `contentTextTruncated`/`contentHTMLTruncated` flags and length information
 
 ---
 

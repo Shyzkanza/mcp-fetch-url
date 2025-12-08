@@ -1,6 +1,6 @@
 {
   "name": "@shyzus/mcp-scrapidou",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "Scrapidou - MCP server for web scraping and URL fetching",
   "type": "module",
   "main": "dist/index.js",

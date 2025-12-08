@@ -21,7 +21,7 @@ export function createStdioServer(): Server {
   const server = new Server(
     {
       name: 'scrapidou',
-      version: '1.0.2',
+      version: '1.1.0',
     },
     {
       capabilities: {
@@ -37,30 +37,66 @@ export function createStdioServer(): Server {
         {
           name: 'fetch_url',
           description:
-            'Fetch and extract content from a web page with three extraction modes optimized for different use cases. Choose the mode based on the conversation context and information needs.\n\n**WHEN TO USE EACH MODE:**\n\n- **light**: Use for simple conversations when you only need a quick summary or basic information. Perfect for answering questions like "What is this page about?" or "Give me a brief overview". Returns only metadata (title, description) and clean text content. Fastest and most token-efficient.\n\n- **standard** (default): Use when you need complete information including links, images references, related articles, and issue detection. Perfect for detailed analysis, finding related content, checking for paywalls, or when the user asks about links, images, or wants to explore the page further. Returns metadata, full text content, related links, navigation links (if requested), and detected issues.\n\n- **full**: Use only for advanced technical use cases like parsing HTML structure, API development, or when you need the complete HTML markup. Returns everything including the full HTML content. Most token-intensive, use sparingly.\n\n**GUIDELINES:**\n- Start with **light** mode for simple questions or quick summaries\n- Switch to **standard** mode when the user asks about links, images, related content, or needs detailed information\n- Use **full** mode only for technical/development purposes\n- Do not use this tool to automatically scrape all links from a website',
+            'Fetch and extract content from a web page. Use this tool when the user wants to read, analyze, summarize, or get information from a URL. ' +
+            'Supports flexible extraction: choose between text or HTML format, control content length for quick mapping vs complete analysis, configure issue detection, and configure link extraction. ' +
+            'Perfect for both quick summaries (with maxContentLength) and deep analysis (without limit). ' +
+            'Do NOT use this tool to scrape all links from a website or for automated bulk scraping.',
           inputSchema: {
             type: 'object',
             properties: {
               url: {
                 type: 'string',
                 description:
-                  'The URL of the web page to fetch and extract content from (must be http:// or https://)',
+                  'The URL of the web page to fetch and extract content from. ' +
+                  'Must be a valid HTTP or HTTPS URL (e.g., "https://example.com/article" or "http://blog.example.com/post"). ' +
+                  'The tool will follow redirects automatically and handle common HTTP errors gracefully.',
               },
-              mode: {
+              contentFormat: {
                 type: 'string',
-                enum: ['light', 'standard', 'full'],
+                enum: ['text', 'html', 'both'],
                 description:
-                  'Extraction mode. Use "light" for simple conversations and quick summaries. Use "standard" (default) when you need links, images, related content, or detailed information. Use "full" only for technical/development purposes. Default: standard.',
+                  'Content format determines what type of content is returned. ' +
+                  'Use "text" (default) for clean, readable text content without HTML tags - best for LLM analysis, summarization, and general content understanding. ' +
+                  'Use "html" for full HTML content preserving formatting, structure, images, and links - best for technical analysis, preserving document structure, or when you need the exact HTML structure. ' +
+                  'Use "both" to get both text and HTML content in the same response - useful when you need both formats for different purposes. ' +
+                  'Note: When set to "html" or "both", the tool automatically extracts HTML internally. ' +
+                  'Default: "text".',
+              },
+              maxContentLength: {
+                type: 'number',
+                description:
+                  'Maximum number of characters to extract from the content (applies to both text and HTML). ' +
+                  'Use this parameter for quick mapping, summaries, or when you only need a preview of the content. ' +
+                  'Leave undefined (default) to extract the complete content without any limit - use for complete analysis, deep understanding, or when you need all the information. ' +
+                  'Recommended values: 500-1000 for quick summaries/mapping, 2000-5000 for detailed previews, undefined for complete content. ' +
+                  'Default: undefined (no limit - complete content extraction).',
+              },
+              detectIssues: {
+                type: 'boolean',
+                description:
+                  'Whether to detect issues on the page like paywalls, login requirements, or partial content. ' +
+                  'When true (default), the tool analyzes the page to detect if content is behind a paywall, requires login, or is only partially loaded. ' +
+                  'Use true for general use cases when you want to know if there are access issues with the content. ' +
+                  'Use false to skip issue detection for faster extraction or when you know the content is freely accessible. ' +
+                  'Default: true.',
               },
               extractRelatedLinks: {
                 type: 'boolean',
                 description:
-                  'Extract contextual links like "See also", "Related articles", etc. (default: true). Use for articles, blog posts, Wikipedia pages.',
+                  'Whether to extract contextual links from the page. ' +
+                  'When true (default), extracts links like "See also", "Related articles", "Read more", etc. - these are contextual links that provide additional relevant content. ' +
+                  'Use true for articles, blog posts, Wikipedia pages, news sites, or any content with related material. ' +
+                  'Use false to skip related links extraction for better performance or when you only need the main content. ' +
+                  'Default: true.',
               },
               extractNavigationLinks: {
                 type: 'boolean',
                 description:
-                  'Extract links from sidebar/navigation menus (default: false). Use for documentation sites, technical docs, or structured websites. Not needed for simple articles.',
+                  'Whether to extract links from sidebar/navigation menus. ' +
+                  'When true, extracts links from navigation bars, sidebars, menus, and table of contents - useful for understanding site structure and finding related pages. ' +
+                  'Use true for documentation sites (React, Vue, technical docs), structured websites with navigation menus, or when you need to understand the site structure. ' +
+                  'Use false (default) for simple articles, blog posts, or when navigation links are not relevant. ' +
+                  'Default: false.',
               },
             },
             required: ['url'],
@@ -86,21 +122,30 @@ export function createStdioServer(): Server {
             throw new Error('url parameter is required');
           }
 
-          const mode = args.mode as 'light' | 'standard' | 'full' | undefined;
-          const extractRelatedLinks = args.extractRelatedLinks as boolean | undefined;
-          const extractNavigationLinks = args.extractNavigationLinks as boolean | undefined;
+          const contentFormat = (args.contentFormat as 'text' | 'html' | 'both' | undefined) || 'text';
+          const maxContentLength = args.maxContentLength as number | undefined;
+          const detectIssues = args.detectIssues !== false; // default: true
+          const extractRelatedLinks = args.extractRelatedLinks !== false; // default: true
+          const extractNavigationLinks = args.extractNavigationLinks === true; // default: false
 
           const result = await fetchUrl({
             url,
-            mode,
+            contentFormat,
+            detectIssues,
             extractRelatedLinks,
             extractNavigationLinks,
           });
 
           // Formatage pour MCP (texte lisible)
           let output = `📄 Content extracted from: ${url}\n`;
-          if (mode) {
-            output += `📋 Mode: ${mode}\n`;
+          if (contentFormat) {
+            output += `📝 Format: ${contentFormat}\n`;
+          }
+          if (maxContentLength !== undefined) {
+            output += `✂️  Max length: ${maxContentLength} characters\n`;
+          }
+          if (!detectIssues) {
+            output += `⚡ Fast mode: issue detection disabled\n`;
           }
           output += '\n';
 
@@ -150,19 +195,23 @@ export function createStdioServer(): Server {
             }
           }
 
-          // Afficher le contenu texte (toujours disponible)
+          // Afficher le contenu texte (toujours disponible si contentFormat: 'text' ou 'both')
           if (result.contentText) {
-            output += `\n📝 Text Content:\n${result.contentText.substring(0, 3000)}`;
-            if (result.contentText.length > 3000) {
-              output += `\n\n... (${result.contentText.length - 3000} more characters)`;
+            const displayLength = maxContentLength ? Math.min(maxContentLength, 5000) : 5000;
+            const textToShow = result.contentText.substring(0, displayLength);
+            output += `\n📝 Text Content:\n${textToShow}`;
+            if (result.contentText.length > displayLength) {
+              output += `\n\n... (${result.contentText.length - displayLength} more characters)`;
             }
           }
 
-          // Afficher le HTML seulement en mode full (et tronqué)
+          // Afficher le HTML si contentFormat: 'html' ou 'both'
           if (result.contentHTML) {
-            output += `\n\n📄 HTML Content (truncated):\n${result.contentHTML.substring(0, 1000)}`;
-            if (result.contentHTML.length > 1000) {
-              output += `\n\n... (${result.contentHTML.length - 1000} more characters)`;
+            const displayLength = maxContentLength ? Math.min(maxContentLength, 2000) : 2000;
+            const htmlToShow = result.contentHTML.substring(0, displayLength);
+            output += `\n\n📄 HTML Content (truncated):\n${htmlToShow}`;
+            if (result.contentHTML.length > displayLength) {
+              output += `\n\n... (${result.contentHTML.length - displayLength} more characters)`;
             }
           }
 

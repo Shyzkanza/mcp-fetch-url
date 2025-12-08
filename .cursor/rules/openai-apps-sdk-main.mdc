@@ -1,12 +1,12 @@
 ---
-description: Règles principales pour le développement MCP ChatGPT Apps SDK
+description: Règles principales et checklist pour le développement MCP ChatGPT Apps SDK
 globs: 
 alwaysApply: true
 ---
 
 # OpenAI Apps SDK - Règles Principales
 
-> Ce projet utilise le SDK OpenAI Apps pour créer une application MCP compatible ChatGPT.
+> Règles génériques pour le développement d'applications MCP compatibles ChatGPT Apps SDK.
 > Documentation de référence: `OPENAI_APPS_SDK_REFERENCE.md`
 
 ## Points Critiques à Retenir
@@ -29,6 +29,12 @@ annotations: {
 }
 ```
 
+### MIME Type Widget
+
+```typescript
+mimeType: 'text/html+skybridge'  // OBLIGATOIRE pour widgets
+```
+
 ## Règles de Développement
 
 ### Tools (`src/tools/`)
@@ -39,23 +45,76 @@ annotations: {
 4. **Validation**: TOUJOURS valider les entrées server-side
 5. **Idempotence**: Tools read-only doivent être safe to retry
 
+### Widgets (`src/resources/`)
+
+1. **Assets inline**: Tout CSS/JS doit être inline
+2. **State**: Utiliser `window.openai.setWidgetState()` pour persister
+3. **CSP**: Déclarer les domaines externes dans `_meta['openai/widgetCSP']`
+4. **Fallback**: Toujours gérer le cas où `toolOutput` est null
+5. **Extraction de données**: Utiliser une fonction `extractData()` multi-sources (voir section Bonnes Pratiques dans `OPENAI_APPS_SDK_REFERENCE.md`)
+6. **Polling**: Pattern `init()` + `render()` avec stockage des données (voir section Bonnes Pratiques dans `OPENAI_APPS_SDK_REFERENCE.md`)
+7. **`_meta` préservé**: Ne jamais écraser un `_meta` existant dans `http.ts` (voir section Bonnes Pratiques dans `OPENAI_APPS_SDK_REFERENCE.md`)
+
 ### Réponses
 
 1. **`structuredContent`**: Garder LÉGER (< 4k tokens)
 2. **`_meta`**: Données volumineuses/sensibles ici uniquement
 3. **`content`**: Résumé markdown lisible
 
+## Workflow de Développement
+
+### Développement Local
+
+```bash
+# Lancer le serveur
+npm run dev
+
+# Tester avec MCP Inspector
+npx @modelcontextprotocol/inspector@latest http://localhost:3000/mcp
+
+# Tunnel pour ChatGPT
+ngrok http 3000
+```
+
+### Test dans ChatGPT
+
+1. Settings → Apps & Connectors → Advanced → Developer mode ON
+2. Create connector avec URL ngrok `/mcp`
+3. Refresh connector après chaque modification serveur
+4. Tester avec prompts réels
+
+## Structure de Fichiers
+
+```
+src/
+├── tools/                    # Définitions des tools MCP
+│   └── fetch/
+│       ├── get-url.ts       # Tool definition + handler
+│       └── types.ts         # Types spécifiques
+├── resources/                # Templates widgets HTML
+│   └── fetch-widget.html
+├── servers/
+│   └── http.ts              # Serveur HTTP MCP
+├── utils/
+│   └── errors.ts             # Gestion d'erreurs
+├── types.ts                  # Types partagés
+└── config.ts                 # Configuration
+```
+
 ## Commandes Utiles
 
 ```bash
-# Workflow recommandé
-npm run tunnel           # Terminal 1: ngrok
-npm run dev              # Terminal 2: dev server
+# Workflow recommandé pour ChatGPT (2 terminaux)
+npm run tunnel           # Terminal 1: lancer une fois, garder ouvert
+npm run dev              # Terminal 2: dev avec hot-reload
+
+# Alternative tout-en-un
+npm run dev:tunnel
 
 # Build + start
 npm run build:start
 
-# Kill le serveur
+# Kill le serveur sur le port
 npm run kill
 
 # MCP Inspector
@@ -72,9 +131,21 @@ npm run health
 - [ ] Description "Use this when..." + "Do NOT use for..."
 - [ ] `inputSchema` avec descriptions
 - [ ] `annotations` (readOnlyHint, destructiveHint, openWorldHint)
+- [ ] `_meta['openai/outputTemplate']` si widget
 - [ ] Validation entrées server-side
 - [ ] Types TypeScript
-- [ ] Gestion erreurs
+- [ ] Gestion erreurs avec classes du projet
+
+### Nouveau Widget
+- [ ] `mimeType: 'text/html+skybridge'`
+- [ ] CSS/JS inline
+- [ ] CSP déclarée si fetch externe
+- [ ] Gestion `widgetState`
+- [ ] Fallback si `toolOutput` null
+- [ ] Responsive (`displayMode`, `maxHeight`)
+- [ ] **Extraction robuste** : Fonction `extractData()` multi-sources (voir section Bonnes Pratiques dans `OPENAI_APPS_SDK_REFERENCE.md`)
+- [ ] **Pattern init/render** : Stocker les données avant de rendre (voir section Bonnes Pratiques dans `OPENAI_APPS_SDK_REFERENCE.md`)
+- [ ] **Polling** : 150 tentatives, condition simple (voir section Bonnes Pratiques dans `OPENAI_APPS_SDK_REFERENCE.md`)
 
 ### Réponse Tool
 - [ ] `content` avec résumé markdown
@@ -85,4 +156,6 @@ npm run health
 ## Ressources
 
 - **Documentation SDK**: `OPENAI_APPS_SDK_REFERENCE.md`
+- **Bonnes Pratiques Widgets**: Section "Bonnes Pratiques : Développement de Widgets" dans `OPENAI_APPS_SDK_REFERENCE.md`
 - **MCP Protocol**: https://modelcontextprotocol.io/
+- **OpenAI Apps**: https://developers.openai.com/apps-sdk

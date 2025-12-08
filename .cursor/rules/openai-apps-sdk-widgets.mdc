@@ -1,0 +1,280 @@
+---
+description: Développement des widgets UI pour ChatGPT Apps SDK
+globs: 
+  - src/resources/**/*.html
+  - src/resources/**/*.ts
+  - src/widgets/**/*
+alwaysApply: false
+---
+
+# OpenAI Apps SDK - Développement Widgets
+
+## Enregistrement d'une Resource Widget
+
+```typescript
+server.registerResource({
+  uri: 'template://fetch-widget',
+  name: 'Fetch Widget',
+  mimeType: 'text/html+skybridge',  // ⚠️ OBLIGATOIRE - Active le runtime
+  text: async () => fs.readFileSync('./widgets/fetch.html', 'utf-8'),
+  _meta: {
+    'openai/widgetCSP': {
+      'connect-src': ['https://api.example.com'],
+      'img-src': ['https://cdn.example.com']
+    },
+    'openai/widgetDescription': 'Affiche le contenu récupéré'
+  }
+});
+```
+
+**Points critiques**:
+- ✅ `mimeType: 'text/html+skybridge'` est OBLIGATOIRE
+- ✅ Déclarer les domaines CSP dans `_meta['openai/widgetCSP']`
+- ✅ Changer l'URI lors de breaking changes (évite le cache)
+
+## Structure HTML Widget
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    /* ⚠️ TOUT le CSS doit être inline */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; }
+    .container { padding: 16px; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <script>
+    // ⚠️ TOUT le JS doit être inline - pas de scripts externes
+    
+    // Récupérer les données OpenAI
+    const { toolOutput, toolInput, widgetState, displayMode, locale } = window.openai;
+    
+    // Initialiser depuis l'état sauvegardé
+    let state = widgetState || { selectedIndex: 0 };
+    
+    // Render avec les données du serveur
+    function render() {
+      const app = document.getElementById('app');
+      
+      if (toolOutput?.structuredContent) {
+        const data = toolOutput.structuredContent;
+        app.innerHTML = `
+          <div class="container">
+            <h2>${data.title}</h2>
+            <p>${data.content}</p>
+          </div>
+        `;
+      }
+      
+      // Utiliser les données riches de _meta
+      if (toolOutput?._meta?.fullData) {
+        // Render détaillé avec données complètes
+      }
+    }
+    
+    // Persister l'état
+    function saveState(newState) {
+      state = { ...state, ...newState };
+      window.openai.setWidgetState(state);
+    }
+    
+    // Appeler un outil serveur
+    async function refreshData() {
+      const result = await window.openai.callTool('fetch.get_url', {
+        url: toolInput.url
+      });
+      // result contient structuredContent et _meta
+      render();
+    }
+    
+    // Init
+    render();
+  </script>
+</body>
+</html>
+```
+
+## API window.openai
+
+| Propriété/Méthode | Description |
+|-------------------|-------------|
+| `toolOutput` | Données du serveur (`structuredContent` + `_meta`) |
+| `toolInput` | Paramètres d'entrée du tool |
+| `widgetState` | État persisté du widget (scoped par instance) |
+| `displayMode` | Mode: `inline`/`carousel`/`fullscreen`/`pip` |
+| `maxHeight` | Hauteur max disponible |
+| `locale` | Locale utilisateur (RFC 4647) |
+| `callTool(name, payload)` | Invoque un tool serveur |
+| `setWidgetState(state)` | Persiste l'état (< 4k tokens) |
+| `sendFollowUpMessage(text)` | Envoie un message dans ChatGPT |
+| `requestClose()` | Ferme le widget |
+| `requestDisplayMode(mode)` | Change le layout |
+| `requestModal(options)` | Ouvre un overlay |
+
+## Gestion du State
+
+### Widget State (Éphémère)
+
+```javascript
+// Lire l'état au chargement
+let state = window.openai.widgetState || { 
+  selectedId: null,
+  expanded: false 
+};
+
+// Sauvegarder après chaque changement
+function updateState(updates) {
+  state = { ...state, ...updates };
+  window.openai.setWidgetState(state);  // Synchrone, persistence async
+}
+
+// Exemple: sélection d'un item
+function selectItem(id) {
+  updateState({ selectedId: id });
+  render();
+}
+```
+
+**Règles**:
+- ✅ State scoped à l'instance du widget (message_id/widgetId)
+- ✅ Appeler `setWidgetState` immédiatement après chaque change
+- ✅ Garder le payload < 4k tokens (envoyé au modèle)
+- ❌ Ne persiste PAS entre widgets/conversations
+
+### Business State (Authoritative)
+
+```javascript
+// Le serveur est la source de vérité
+async function updateTask(taskId, updates) {
+  // 1. Optimistic update UI
+  renderLoading();
+  
+  // 2. Appel serveur
+  const result = await window.openai.callTool('tasks.update', {
+    id: taskId,
+    ...updates
+  });
+  
+  // 3. Re-render avec données serveur
+  if (result.structuredContent) {
+    renderTasks(result.structuredContent.tasks);
+  }
+}
+```
+
+## Restrictions Sandbox
+
+### ❌ APIs Bloquées
+- `alert()`, `confirm()`, `prompt()`
+- `navigator.clipboard`
+- Scripts externes (`<script src="...">`)
+- CSS externes (`<link rel="stylesheet" href="...">`)
+
+### ✅ Autorisé
+- Tous les assets inline (CSS, JS, images base64)
+- `fetch()` vers domaines déclarés en CSP
+- APIs DOM standard
+- Routing APIs (React Router, etc.)
+
+## Modes d'Affichage
+
+```javascript
+const mode = window.openai.displayMode;
+
+switch (mode) {
+  case 'inline':
+    // Card légère dans la conversation
+    // Max 2 actions, pas de nested scrolling
+    break;
+  case 'carousel':
+    // 3-8 items, swipe horizontal
+    break;
+  case 'fullscreen':
+    // Expérience riche, composer ChatGPT overlay
+    break;
+  case 'pip':
+    // Fenêtre flottante persistante
+    break;
+}
+
+// Demander un changement de mode
+window.openai.requestDisplayMode('fullscreen');
+```
+
+## Pattern React (Bundlé)
+
+```typescript
+// hooks/useWidgetState.ts
+import { useState, useEffect } from 'react';
+
+export function useWidgetState<T>(initialState: T) {
+  const [state, setState] = useState<T>(
+    window.openai?.widgetState ?? initialState
+  );
+
+  useEffect(() => {
+    const handler = (event: CustomEvent) => {
+      if (event.detail?.key === 'widgetState') {
+        setState(event.detail.value);
+      }
+    };
+    window.addEventListener('openai:set_globals', handler as EventListener);
+    return () => window.removeEventListener('openai:set_globals', handler as EventListener);
+  }, []);
+
+  const updateState = (newState: Partial<T>) => {
+    const merged = { ...state, ...newState };
+    setState(merged as T);
+    window.openai?.setWidgetState(merged);
+  };
+
+  return [state, updateState] as const;
+}
+```
+
+## Checklist Widget
+
+Avant de commit un widget :
+
+- [ ] MIME type `text/html+skybridge`
+- [ ] Tout CSS/JS inline (pas de fichiers externes)
+- [ ] Domaines CSP déclarés si fetch externe
+- [ ] Gestion de `widgetState` pour persistence
+- [ ] Fallback si `toolOutput` est null
+- [ ] Responsive (utilise `maxHeight`, `displayMode`)
+- [ ] Accessibilité basique (contraste, alt text)
+- [ ] Pas d'usage de APIs bloquées (alert, clipboard)
+
+## Bonnes Pratiques et Debugging
+
+> **📚 Documentation complète** : Voir la section "Bonnes Pratiques : Développement de Widgets" dans [`OPENAI_APPS_SDK_REFERENCE.md`](../../OPENAI_APPS_SDK_REFERENCE.md) pour les leçons apprises lors du développement de widgets MCP.
+
+**Points critiques à retenir** :
+
+1. **Extraction des données** : Utiliser une fonction `extractData()` multi-sources qui vérifie :
+   - `window.openai?.toolOutput`
+   - `window.oai?.toolOutput`
+   - `structuredContent` direct et nested
+   - `text` parsed as JSON
+
+2. **Pattern init/render** : Toujours stocker les données dans une variable avant de rendre :
+   ```javascript
+   let widgetData = null;
+   function init(data) {
+     widgetData = data; // Stocker
+     render(); // Puis rendre
+   }
+   ```
+
+3. **Condition de polling** : Vérifier uniquement la donnée principale, pas les propriétés secondaires
+
+4. **Tentatives suffisantes** : Utiliser 150 tentatives (15 secondes) pour données complexes
+
+5. **Préserver `_meta`** : Dans `http.ts`, ne jamais écraser un `_meta` existant d'un tool
+
+Voir la section "Bonnes Pratiques : Développement de Widgets" dans [`OPENAI_APPS_SDK_REFERENCE.md`](../../OPENAI_APPS_SDK_REFERENCE.md) pour les détails complets, exemples de code, et guide de debugging.

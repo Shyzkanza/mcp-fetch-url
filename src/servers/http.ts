@@ -37,32 +37,67 @@ const MCP_PATH = '/mcp';
 const fetchUrlTool: Tool = {
   name: 'fetch_url',
   description:
-    'Fetch and extract content from a web page. Use this tool when the user wants to read, analyze, or get information from a URL. ' +
-    'Supports three modes: "light" for quick summaries, "standard" (default) for full text with links, "full" for complete HTML. ' +
-    'Do NOT use this tool to scrape all links from a website.',
+    'Fetch and extract content from a web page. Use this tool when the user wants to read, analyze, summarize, or get information from a URL. ' +
+    'Supports flexible extraction: choose between text or HTML format, control content length for quick mapping vs complete analysis, configure issue detection, and configure link extraction. ' +
+    'Perfect for both quick summaries (with maxContentLength) and deep analysis (without limit). ' +
+    'Do NOT use this tool to scrape all links from a website or for automated bulk scraping.',
   inputSchema: {
     type: 'object',
     properties: {
       url: {
         type: 'string',
         description:
-          'The URL of the web page to fetch and extract content from (must be http:// or https://)',
+          'The URL of the web page to fetch and extract content from. ' +
+          'Must be a valid HTTP or HTTPS URL (e.g., "https://example.com/article" or "http://blog.example.com/post"). ' +
+          'The tool will follow redirects automatically and handle common HTTP errors gracefully.',
       },
-      mode: {
+      contentFormat: {
         type: 'string',
-        enum: ['light', 'standard', 'full'],
+        enum: ['text', 'html', 'both'],
         description:
-          'Extraction mode. Use "light" for simple conversations and quick summaries. Use "standard" (default) when you need links, images, related content, or detailed information. Use "full" only for technical/development purposes. Default: standard.',
+          'Content format determines what type of content is returned in structuredContent. ' +
+          'Use "text" (default) for clean, readable text content without HTML tags - best for LLM analysis, summarization, and general content understanding. ' +
+          'Use "html" for full HTML content preserving formatting, structure, images, and links - best for technical analysis, preserving document structure, or when you need the exact HTML structure. ' +
+          'Use "both" to get both text and HTML content in the same response - useful when you need both formats for different purposes. ' +
+          'Note: When set to "html" or "both", the tool automatically extracts HTML internally. ' +
+          'Default: "text".',
+      },
+      maxContentLength: {
+        type: 'number',
+        description:
+          'Maximum number of characters to extract from the content (applies to both text and HTML). ' +
+          'Use this parameter for quick mapping, summaries, or when you only need a preview of the content. ' +
+          'Leave undefined (default) to extract the complete content without any limit - use for complete analysis, deep understanding, or when you need all the information. ' +
+          'The content will be truncated at this limit if the extracted content is longer. ' +
+          'Recommended values: 500-1000 for quick summaries/mapping, 2000-5000 for detailed previews, undefined for complete content. ' +
+          'Default: undefined (no limit - complete content extraction).',
+      },
+      detectIssues: {
+        type: 'boolean',
+        description:
+          'Whether to detect issues on the page like paywalls, login requirements, or partial content. ' +
+          'When true (default), the tool analyzes the page to detect if content is behind a paywall, requires login, or is only partially loaded. ' +
+          'Use true for general use cases when you want to know if there are access issues with the content. ' +
+          'Use false to skip issue detection for faster extraction or when you know the content is freely accessible. ' +
+          'Default: true.',
       },
       extractRelatedLinks: {
         type: 'boolean',
         description:
-          'Extract contextual links like "See also", "Related articles", etc. (default: true). Use for articles, blog posts, Wikipedia pages.',
+          'Whether to extract contextual links from the page. ' +
+          'When true (default), extracts links like "See also", "Related articles", "Read more", etc. - these are contextual links that provide additional relevant content. ' +
+          'Use true for articles, blog posts, Wikipedia pages, news sites, or any content with related material. ' +
+          'Use false to skip related links extraction for better performance or when you only need the main content. ' +
+          'Default: true.',
       },
       extractNavigationLinks: {
         type: 'boolean',
         description:
-          'Extract links from sidebar/navigation menus (default: false). Use for documentation sites, technical docs, or structured websites. Not needed for simple articles.',
+          'Whether to extract links from sidebar/navigation menus. ' +
+          'When true, extracts links from navigation bars, sidebars, menus, and table of contents - useful for understanding site structure and finding related pages. ' +
+          'Use true for documentation sites (React, Vue, technical docs), structured websites with navigation menus, or when you need to understand the site structure. ' +
+          'Use false (default) for simple articles, blog posts, or when navigation links are not relevant. ' +
+          'Default: false.',
       },
     },
     required: ['url'],
@@ -79,7 +114,7 @@ function createMcpServer(): Server {
   const server = new Server(
     {
       name: 'scrapidou',
-      version: '1.0.3',
+      version: '1.1.0',
     },
     {
       capabilities: {
@@ -114,7 +149,9 @@ function createMcpServer(): Server {
     if (toolName === 'fetch_url') {
       const args = toolArgs as {
         url?: string;
-        mode?: 'light' | 'standard' | 'full';
+        contentFormat?: 'text' | 'html' | 'both';
+        maxContentLength?: number;
+        detectIssues?: boolean;
         extractRelatedLinks?: boolean;
         extractNavigationLinks?: boolean;
       };
@@ -123,21 +160,133 @@ function createMcpServer(): Server {
         throw new Error('url parameter is required');
       }
 
+      // Déterminer les paramètres
+      const contentFormat = args.contentFormat || 'text';
+      const maxContentLength = args.maxContentLength; // undefined = no limit
+      const detectIssues = args.detectIssues !== false; // default: true
+      const extractRelatedLinks = args.extractRelatedLinks !== false; // default: true
+      const extractNavigationLinks = args.extractNavigationLinks === true; // default: false
+      
+      // Le mode est maintenant déterminé automatiquement dans fetchUrl selon contentFormat
       const toolResult = await fetchUrl({
         url: args.url,
-        mode: args.mode,
-        extractRelatedLinks: args.extractRelatedLinks,
-        extractNavigationLinks: args.extractNavigationLinks,
+        contentFormat: contentFormat,
+        detectIssues: detectIssues,
+        extractRelatedLinks: extractRelatedLinks,
+        extractNavigationLinks: extractNavigationLinks,
       });
 
-      // Format pour ChatGPT (JSON structuré)
+      // Format pour ChatGPT : structuredContent avec contenu complet
+      // Pas de widget, donc pas besoin de _meta complexe
+      // Le contenu complet est dans structuredContent selon contentFormat
+      
+      let summary = `📄 Content extracted from: ${args.url}\n`;
+      if (contentFormat) {
+        summary += `📝 Format: ${contentFormat}\n`;
+      }
+      if (maxContentLength !== undefined) {
+        summary += `✂️  Max length: ${maxContentLength} characters\n`;
+      }
+      if (!detectIssues) {
+        summary += `⚡ Fast mode: issue detection disabled\n`;
+      }
+      summary += '\n';
+      
+      if (toolResult.metadata?.title) {
+        summary += `📌 **Title**: ${toolResult.metadata.title}\n`;
+      }
+      if (toolResult.metadata?.description) {
+        summary += `📝 **Description**: ${toolResult.metadata.description}\n`;
+      }
+      if (toolResult.metadata?.author) {
+        summary += `✍️  **Author**: ${toolResult.metadata.author}\n`;
+      }
+      if (toolResult.metadata?.publishedDate) {
+        summary += `📅 **Published**: ${toolResult.metadata.publishedDate}\n`;
+      }
+      
+      if (toolResult.contentText) {
+        summary += `\n📊 Text content: ${toolResult.contentText.length} characters\n`;
+      }
+      
+      if (toolResult.contentHTML) {
+        summary += `\n📄 HTML content: ${toolResult.contentHTML.length} characters\n`;
+      }
+      
+      if (toolResult.issues && toolResult.issues.length > 0) {
+        summary += `\n⚠️  **Issues detected**: ${toolResult.issues.length}\n`;
+        toolResult.issues.forEach((issue) => {
+          summary += `   - ${issue.type}: ${issue.message}\n`;
+        });
+      }
+      
+      if (toolResult.relatedLinks && toolResult.relatedLinks.length > 0) {
+        summary += `\n🔗 **Related links**: ${toolResult.relatedLinks.length} found\n`;
+      }
+      
+      if (toolResult.navigationLinks && toolResult.navigationLinks.length > 0) {
+        summary += `\n🧭 **Navigation links**: ${toolResult.navigationLinks.length} found\n`;
+      }
+      
+      // Préparer structuredContent avec contenu selon contentFormat et maxContentLength
+      const structuredContent: Record<string, unknown> = {
+        type: 'webpage',
+        url: args.url,
+        contentFormat: contentFormat,
+        metadata: toolResult.metadata,
+        issues: detectIssues ? (toolResult.issues || []) : [],
+        relatedLinks: toolResult.relatedLinks || [],
+        navigationLinks: toolResult.navigationLinks || [],
+      };
+      
+      // Ajouter le contenu selon le format demandé, avec limite si spécifiée
+      if (contentFormat === 'text' || contentFormat === 'both') {
+        let contentText = toolResult.contentText || '';
+        const originalTextLength = contentText.length;
+        
+        // Appliquer la limite si spécifiée
+        if (maxContentLength !== undefined && maxContentLength > 0 && contentText.length > maxContentLength) {
+          contentText = contentText.substring(0, maxContentLength);
+          structuredContent.contentTextTruncated = true;
+        } else {
+          structuredContent.contentTextTruncated = false;
+        }
+        
+        structuredContent.contentText = contentText;
+        structuredContent.contentTextLength = originalTextLength;
+        structuredContent.contentTextExtractedLength = contentText.length;
+      }
+      
+      if (contentFormat === 'html' || contentFormat === 'both') {
+        let contentHTML = toolResult.contentHTML || '';
+        const originalHTMLLength = contentHTML.length;
+        
+        // Appliquer la limite si spécifiée
+        if (maxContentLength !== undefined && maxContentLength > 0 && contentHTML.length > maxContentLength) {
+          contentHTML = contentHTML.substring(0, maxContentLength);
+          structuredContent.contentHTMLTruncated = true;
+        } else {
+          structuredContent.contentHTMLTruncated = false;
+        }
+        
+        structuredContent.contentHTML = contentHTML;
+        structuredContent.contentHTMLLength = originalHTMLLength;
+        structuredContent.contentHTMLExtractedLength = contentHTML.length;
+      }
+      
+      // Ajouter l'info sur la limite si elle a été appliquée
+      if (maxContentLength !== undefined) {
+        structuredContent.maxContentLength = maxContentLength;
+      }
+      
       return {
         content: [
           {
             type: 'text',
-            text: JSON.stringify(toolResult, null, 2),
+            text: summary,
           },
         ],
+        structuredContent,
       };
     }
 
@@ -237,7 +386,7 @@ export function createHttpServer() {
           JSON.stringify({
             status: 'ok',
             service: 'scrapidou',
-            version: '1.0.3',
+            version: '1.1.0',
             transport: 'streamable-http',
           })
         );

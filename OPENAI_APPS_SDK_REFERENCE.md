@@ -4,6 +4,8 @@
 > Source: https://developers.openai.com/apps-sdk
 > Dernière mise à jour: 2025-01-27
 
+> **📚 Bonnes Pratiques Widgets** : Voir la section [Bonnes Pratiques : Développement de Widgets](#bonnes-pratiques--développement-de-widgets) pour les leçons apprises lors du développement de widgets (extraction de données, polling, debugging, patterns recommandés).
+
 ## Vue d'ensemble
 
 Le **Apps SDK** est un framework pour construire des applications intégrées dans ChatGPT. Il combine:
@@ -205,6 +207,8 @@ server.listen(8787);
 
 ## Widget UI - Développement
 
+> **📚 Bonnes Pratiques** : Voir la section [Bonnes Pratiques : Développement de Widgets](#bonnes-pratiques--développement-de-widgets) pour les leçons apprises lors du développement de widgets (extraction de données, polling, debugging).
+
 ### Structure HTML de base
 
 ```html
@@ -228,6 +232,8 @@ server.listen(8787);
     }
 
     // Utiliser les données du serveur
+    // ⚠️ IMPORTANT : Pour une extraction robuste avec polling et gestion d'erreurs,
+    // voir la section "Bonnes Pratiques : Développement de Widgets"
     if (toolOutput?.structuredContent) {
       // Render UI avec structuredContent
     }
@@ -486,6 +492,8 @@ export function TaskList({ data }) {
 **Exemple (Vanilla JS)**:
 
 ```javascript
+// ⚠️ NOTE : Pour une extraction robuste de toolOutput avec polling,
+// voir la section "Bonnes Pratiques : Développement de Widgets"
 const tasks = window.openai.toolOutput?.tasks ?? [];
 let widgetState = window.openai.widgetState ?? { selectedId: null };
 
@@ -1687,10 +1695,16 @@ Quand quelque chose va mal (components fail to render, discovery missing prompts
 **Widget fails to load**:
 - ✅ Ouvrir browser console (ou MCP Inspector logs) pour CSP violations ou missing bundles
 - ✅ S'assurer que le HTML inlines votre compiled JS et que toutes dependencies sont bundled
+- ✅ **Voir la section [Bonnes Pratiques : Développement de Widgets](#bonnes-pratiques--développement-de-widgets)** pour les patterns d'extraction de données, polling, et debugging
 
 **Drag-and-drop ou editing ne persiste pas**:
 - ✅ Vérifier que vous appelez `window.openai.setWidgetState` après chaque update
 - ✅ Vérifier que vous rehydratez depuis `window.openai.widgetState` on mount
+
+**Widget affiche "Données indisponibles" malgré réception des données**:
+- ✅ **Voir la section [Bonnes Pratiques : Développement de Widgets](#bonnes-pratiques--développement-de-widgets)** pour les patterns d'extraction multi-sources, polling robuste, et debugging
+- ✅ Vérifier que `_meta` n'est pas écrasé dans `http.ts`
+- ✅ Comparer avec les widgets fonctionnels (`quarter-widget.html`, `weather-widget.html`)
 
 **Layout problems on mobile**:
 - ✅ Inspecter `window.openai.displayMode` et `window.openai.maxHeight` pour ajuster layout
@@ -1835,6 +1849,8 @@ http.createServer(async (req, res) => {
 
 ### Widget minimal
 
+> **📚 Note** : Cet exemple est simplifié. Pour un widget robuste avec extraction de données, polling, et gestion d'erreurs, voir la section [Bonnes Pratiques : Développement de Widgets](#bonnes-pratiques--développement-de-widgets).
+
 ```html
 <!DOCTYPE html>
 <html>
@@ -1858,6 +1874,193 @@ http.createServer(async (req, res) => {
 </body>
 </html>
 ```
+
+---
+
+## Bonnes Pratiques : Développement de Widgets
+
+> **Contexte** : Cette section documente les leçons apprises lors du développement de widgets MCP, notamment lors du debug du widget `location.get_details` qui affichait "Données indisponibles" malgré la réception correcte des données par ChatGPT.
+
+### 1. Extraction Robuste des Données (`extractData()`)
+
+**Problème** : Le widget ne trouvait pas les données même si elles étaient présentes dans `toolOutput`.
+
+**Cause** : La fonction `extractData()` n'était pas assez robuste et ne vérifiait pas toutes les sources possibles.
+
+**Solution** : Implémenter une extraction multi-sources avec fallbacks :
+
+```javascript
+function extractData() {
+  const sources = [
+    () => window.openai?.toolOutput,
+    () => window.oai?.toolOutput, // Pour compatibilité ou environnements spécifiques
+  ];
+  
+  for (const getSource of sources) {
+    try {
+      let data = getSource();
+      if (!data) continue;
+      
+      // Parser si string
+      if (typeof data === 'string') {
+        try { data = JSON.parse(data); } catch(e) { continue; }
+      }
+      
+      // PRIORITÉ 1 : Données directement à la racine (ex: { location: {...} })
+      if (data?.location) {
+        return data;
+      }
+      
+      // PRIORITÉ 2 : Données dans structuredContent (ex: { structuredContent: { location: {...} } })
+      if (data?.structuredContent?.location) {
+        return {
+          location: data.structuredContent.location,
+          availableActions: data.structuredContent.availableActions || [],
+          // ... autres propriétés
+        };
+      }
+      
+      // PRIORITÉ 3 : Données JSON parsées depuis un champ 'text' (ex: { text: "{ \"location\": {...} }" })
+      if (data?.text) {
+        try {
+          const parsed = JSON.parse(data.text);
+          if (parsed.location) return parsed;
+        } catch(e) {}
+      }
+    } catch(e) {
+      continue;
+    }
+  }
+  
+  return null;
+}
+```
+
+**✅ Règle d'or** : Toujours tester l'extraction de données avec des `console.log` détaillés à chaque étape du processus de polling et d'initialisation.
+
+### 2. Pattern d'Initialisation et de Rendu (`init()` / `render()`)
+
+**Problème** : Appeler `render()` directement depuis la boucle de polling peut entraîner des rendus partiels ou des problèmes de synchronisation si les données ne sont pas entièrement prêtes ou si l'état n'est pas correctement géré.
+
+**Solution** : Utiliser un pattern `init(data)` qui stocke les données reçues et appelle ensuite `render()`. `render()` doit toujours travailler avec l'état interne (`locationData`, `quarterData`, etc.) pour garantir la cohérence.
+
+**Pattern Recommandé** :
+```javascript
+let widgetData = null; // Variable globale pour stocker les données
+
+function render() {
+  if (!widgetData) return;
+  // Logique de rendu utilisant widgetData
+  document.getElementById('root').innerHTML = `... ${widgetData.someProperty} ...`;
+  // ... attacher les event listeners ici après le rendu ...
+}
+
+function init(data) {
+  widgetData = data;
+  render();
+  // Initialiser les composants externes (ex: Leaflet map) ici
+  if (widgetData.location?.latitude && widgetData.location?.longitude) {
+    initMap(widgetData.location.latitude, widgetData.location.longitude);
+  }
+}
+```
+
+### 3. Condition de Polling et Nombre de Tentatives
+
+**Problème** : Une condition de polling trop stricte (ex: attendre `data.location && data.availableActions`) peut empêcher le widget de se rendre même si les données principales sont là, car les actions peuvent être calculées ou ajoutées après. Un nombre insuffisant de tentatives peut aussi causer des échecs.
+
+**Solution** :
+- Simplifier la condition de polling pour vérifier uniquement la présence de la donnée principale (ex: `data?.location`). Les données secondaires peuvent être construites ou vérifiées dans `init()`/`render()`.
+- Augmenter le nombre maximal de tentatives de polling (ex: 150 tentatives sur 15 secondes) pour les widgets complexes ou les environnements avec des latences.
+
+**Pattern Recommandé** :
+```javascript
+let attempts = 0;
+const maxAttempts = 150; // 15 secondes max (150 * 100ms)
+const interval = setInterval(() => {
+  attempts++;
+  const data = extractData();
+
+  if (data?.location) { // Condition simplifiée
+    clearInterval(interval);
+    init(data);
+  } else if (attempts >= maxAttempts) {
+    clearInterval(interval);
+    document.getElementById('root').innerHTML = '<div class="error">Données indisponibles</div>';
+  }
+}, 100);
+```
+
+### 4. Gestion du `_meta` dans `http.ts` (Problème d'écrasement)
+
+**Problème** : Lors de la construction du tableau `tools` dans `src/servers/http.ts`, le `_meta` spécifique à un outil (comme `location.get_details` qui pointe vers `location-details-widget.html`) peut être écrasé par un `_meta` par défaut appliqué à tous les outils.
+
+**Solution** : Modifier la logique de mapping des outils pour vérifier si un `_meta` avec `outputTemplate` existe déjà pour un outil avant d'en appliquer un par défaut.
+
+**Code Corrigé (extrait de `src/servers/http.ts`)** :
+```typescript
+const tools: Tool[] = allTools.map((tool) => {
+  let toolMeta = {};
+  if (tool._meta && 'openai/outputTemplate' in tool._meta) {
+    toolMeta = tool._meta; // Utiliser le _meta existant
+  } else {
+    // Appliquer les métas par défaut uniquement si non déjà défini
+    if (tool.name === 'weather.get_quarter') {
+      toolMeta = quarterWidgetMeta();
+    } else if (tool.name === 'weather.get_forecast') {
+      toolMeta = widgetMeta();
+    } else if (tool.name === 'location.get_details') {
+      toolMeta = locationDetailsWidgetMeta();
+    } else if (tool.name === 'location.get_medias') {
+      toolMeta = locationMediasWidgetMeta();
+    }
+    // ... autres outils sans _meta par défaut ou avec meta conditionnel ...
+  }
+
+  return {
+    name: tool.name,
+    description: tool.description,
+    inputSchema: tool.inputSchema as Tool['inputSchema'],
+    annotations: tool.annotations,
+    ...((Object.keys(toolMeta).length > 0) ? { _meta: toolMeta } : {}),
+  };
+});
+```
+
+### Checklist de Développement de Widget
+
+Lors de la création ou modification d'un widget, toujours vérifier :
+
+- [ ] **Extraction des données** : `extractData()` gère-t-elle toutes les structures possibles de `toolOutput` ? (direct, `structuredContent`, `text` parsé)
+- [ ] **Initialisation** : Le pattern `init(data)` qui stocke les données et appelle `render()` est-il utilisé ?
+- [ ] **Rendu** : `render()` utilise-t-il l'état interne (`widgetData`) et est-il appelé après que toutes les données nécessaires sont prêtes ?
+- [ ] **Polling** : La condition de polling est-elle simple (`data?.mainProperty`) et le nombre de tentatives suffisant (150) ?
+- [ ] **`_meta`** : Le `_meta` du tool est-il correctement défini dans `http.ts` et n'est-il pas écrasé ?
+- [ ] **Console Logs** : Des `console.log` détaillés sont-ils présents pour le debug du flux de données ?
+- [ ] **Fallback** : Un message d'erreur clair est-il affiché si les données ne sont jamais reçues ?
+- [ ] **Responsive** : Le widget s'adapte-t-il aux différentes tailles d'écran ?
+- [ ] **Dark Mode** : Le style est-il correct en mode clair et sombre ?
+- [ ] **Actions** : Les boutons d'action utilisent-ils `callTool()` avec un fallback `sendFollowUpMessage()` ?
+- [ ] **Performance** : Le widget est-il léger et performant ? (CSS/JS inline, pas de grosses libs si non nécessaire)
+- [ ] **Accessibilité** : Les éléments interactifs sont-ils accessibles ?
+
+### Pièges Courants
+
+1. **Ne pas vérifier toutes les sources** → Widget ne trouve pas les données
+2. **Appeler `render()` directement depuis le polling** → Données perdues
+3. **Condition de polling trop restrictive** → Polling s'arrête trop tôt
+4. **Pas assez de tentatives** → Widget s'arrête avant réception des données
+5. **`_meta` écrasé** → Widget ne se charge pas
+6. **Ne pas logger** → Impossible de débugger
+
+### Résumé des Règles d'Or
+
+1. **Extraction multi-sources** : Toujours vérifier plusieurs sources et niveaux
+2. **Pattern init/render** : Stocker les données avant de rendre
+3. **Condition simple** : Vérifier uniquement la donnée principale
+4. **Tentatives suffisantes** : 150 tentatives pour données complexes
+5. **Préserver `_meta`** : Ne jamais écraser un `_meta` existant
+6. **Logger pour débugger** : Toujours ajouter des logs lors du développement
 
 ---
 

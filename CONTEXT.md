@@ -1,7 +1,7 @@
 # 🧠 CONTEXT - Scrapidou
 
-**Last update**: 2025-12-01
-**Status**: ✅ Streamable HTTP transport migrated - Production ready
+**Last update**: 2025-01-27
+**Status**: ✅ Production ready
 
 ---
 
@@ -145,6 +145,34 @@ mcp-fetch-url/
 ---
 
 ## 📝 Changelog
+
+### v1.1.0 - 2025-01-27 - API Simplification & Content Control
+
+**Breaking Changes**
+- ❌ **Suppression du paramètre `mode`** : Le paramètre `mode` (light/standard/full) a été supprimé. Le comportement est maintenant contrôlé par des paramètres explicites.
+
+**New Features**
+- ✅ **Paramètre `maxContentLength`** : Contrôle la taille maximale du contenu extrait (en caractères). Permet de choisir entre cartographie rapide (500-1000 chars) et analyse complète (undefined = pas de limite).
+- ✅ **Paramètre `detectIssues`** : Contrôle explicite de la détection d'issues (paywall, login, etc.). Par défaut `true`, peut être désactivé pour une extraction plus rapide.
+- ✅ **Indicateurs de troncature** : Ajout de `contentTextTruncated`, `contentHTMLTruncated`, `contentTextLength`, `contentTextExtractedLength` pour indiquer si le contenu a été tronqué et les longueurs.
+
+**Improvements**
+- ✅ **Descriptions de paramètres améliorées** : Toutes les descriptions de paramètres ont été enrichies avec des exemples d'usage, des recommandations et des notes importantes.
+- ✅ **API plus explicite** : Remplacement du mode "preset" par des paramètres explicites pour plus de flexibilité et de clarté.
+- ✅ **Documentation README** : Ajout d'une section détaillée sur les use cases, les paramètres et une matrice de décision.
+
+**Technical Changes**
+- ✅ Refactorisation de `fetchUrl.ts` pour supprimer la logique basée sur `mode`
+- ✅ Le mode interne est maintenant déterminé automatiquement selon `contentFormat` (full si HTML demandé)
+- ✅ Mise à jour de `src/servers/http.ts` et `src/servers/stdio.ts` pour les nouveaux paramètres
+- ✅ Mise à jour de `src/types.ts` avec les nouveaux paramètres
+
+**Documentation**
+- ✅ Mise à jour complète du README avec les nouveaux paramètres
+- ✅ Ajout d'exemples d'utilisation pour chaque combinaison de paramètres
+- ✅ Suppression des références au paramètre `mode` obsolète
+
+---
 
 ### v1.0.3 - 2025-12-01 - Migration vers Streamable HTTP
 

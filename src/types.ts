@@ -37,7 +37,9 @@ export interface MCPError {
 
 export interface FetchUrlInput {
   url: string;
-  mode?: 'light' | 'standard' | 'full'; // Default: 'standard' - Extraction mode: light (minimal), standard (text + links), full (HTML + all)
+  contentFormat?: 'text' | 'html' | 'both'; // Default: 'text' - Format du contenu retourné: 'text' (texte nettoyé), 'html' (HTML complet), 'both' (les deux)
+  maxContentLength?: number; // Default: undefined (no limit) - Maximum number of characters to extract from content. Use for quick mapping/summaries. Leave undefined for complete analysis.
+  detectIssues?: boolean; // Default: true - Detect issues like paywall, login required, partial content. Set to false for faster extraction.
   extractRelatedLinks?: boolean; // Default: true - Extract contextual links like "See also", "Related articles"
   extractNavigationLinks?: boolean; // Default: false - Extract links from sidebar/navigation menus (useful for documentation)
 }

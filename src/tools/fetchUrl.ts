@@ -29,18 +29,20 @@ import * as cheerio from 'cheerio';
 export async function fetchUrl(input: FetchUrlInput): Promise<FetchUrlOutput> {
   try {
     // Validation de l'URL
-    const { url, mode = 'standard' } = input;
+    const { url } = input;
+    
+    // Déterminer le mode interne selon contentFormat
+    // Si contentFormat est 'html' ou 'both', on a besoin de 'full' pour extraire le HTML
+    // Sinon, on utilise 'standard' (qui permet issues et related links)
+    const contentFormat = input.contentFormat || 'text';
+    const mode = (contentFormat === 'html' || contentFormat === 'both') ? 'full' : 'standard';
 
     if (!url || typeof url !== 'string' || url.trim().length === 0) {
       throw new InvalidInputError('URL parameter is required and must be a non-empty string');
     }
 
-    // Valider le mode
-    if (mode && !['light', 'standard', 'full'].includes(mode)) {
-      throw new InvalidInputError(
-        `Invalid mode: ${mode}. Must be one of: 'light', 'standard', 'full'`
-      );
-    }
+    // Le mode est maintenant déterminé automatiquement selon contentFormat
+    // Plus besoin de validation utilisateur
 
     const trimmedUrl = url.trim();
 
@@ -74,35 +76,24 @@ export async function fetchUrl(input: FetchUrlInput): Promise<FetchUrlOutput> {
       contentHTML = extractMainContent(html, finalUrl);
     }
 
-    // 5. Détecter les problèmes (toujours disponible sauf en mode 'light')
-    const issues = mode === 'light' ? undefined : detectIssues(html);
+    // 5. Détecter les problèmes (selon detectIssues)
+    const detectIssuesParam = input.detectIssues !== false; // default: true
+    const issues = detectIssuesParam ? detectIssues(html) : undefined;
 
-    // 6. Extraire les liens pertinents selon le mode
+    // 6. Extraire les liens pertinents
     let relatedLinks: FetchUrlOutput['relatedLinks'];
-    if (mode === 'light') {
-      // En mode light, on peut extraire les relatedLinks seulement si très peu coûteux
-      // Pour l'instant, on les exclut pour garder la réponse légère
-      relatedLinks = undefined;
-    } else {
-      const extractRelated = input.extractRelatedLinks !== false;
-      if (extractRelated) {
-        const links = extractRelatedLinks(html, finalUrl);
-        relatedLinks = links.length > 0 ? links : undefined;
-      }
+    const extractRelated = input.extractRelatedLinks !== false; // default: true
+    if (extractRelated) {
+      const links = extractRelatedLinks(html, finalUrl);
+      relatedLinks = links.length > 0 ? links : undefined;
     }
 
     // 7. Extraire les liens de navigation (si demandé)
     let navigationLinks: FetchUrlOutput['navigationLinks'];
-    if (mode === 'light' && input.extractNavigationLinks === true) {
-      // En mode light, on peut extraire les navigationLinks si explicitement demandé
+    const extractNavigation = input.extractNavigationLinks === true; // default: false
+    if (extractNavigation) {
       const links = extractNavigationLinks(html, finalUrl);
       navigationLinks = links.length > 0 ? links : undefined;
-    } else if (mode !== 'light') {
-      const extractNavigation = input.extractNavigationLinks === true;
-      if (extractNavigation) {
-        const links = extractNavigationLinks(html, finalUrl);
-        navigationLinks = links.length > 0 ? links : undefined;
-      }
     }
 
     // 8. Construire la réponse selon le mode
@@ -126,7 +117,7 @@ export async function fetchUrl(input: FetchUrlInput): Promise<FetchUrlOutput> {
       output.navigationLinks = navigationLinks;
     }
 
-    // Ajouter les issues (sauf en mode 'light')
+    // Ajouter les issues (si détectées)
     if (issues && issues.length > 0) {
       output.issues = issues;
     }
