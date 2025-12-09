@@ -146,6 +146,21 @@ mcp-fetch-url/
 
 ## 📝 Changelog
 
+### v1.2.0 - 2025-01-27 - Content Consistency
+
+**Release Notes**
+- ✅ **content and structuredContent contain same data** - Both fields now contain identical data for consistency
+- ✅ `content`: JSON stringified version of structuredContent (for compatibility and fallback)
+- ✅ `structuredContent`: JSON object (unchanged, for direct use)
+- ✅ Tested with Wikipedia URL
+
+**Git**
+- Commit: `e689c18`
+- Tag: `1.2.0`
+- Branch: `main` (merged from release/1.2.0 with --squash)
+
+---
+
 ### v1.1.0 - 2025-01-27 - API Simplification & Content Control
 
 **Breaking Changes**

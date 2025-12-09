@@ -21,7 +21,7 @@ export function createStdioServer(): Server {
   const server = new Server(
     {
       name: 'scrapidou',
-      version: '1.1.0',
+      version: '1.2.0',
     },
     {
       capabilities: {
