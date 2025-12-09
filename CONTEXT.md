@@ -1,6 +1,6 @@
 # 🧠 CONTEXT - Scrapidou
 
-**Last update**: 2025-01-27 (v2.0.0 - Migration to gitflow with develop)
+**Last update**: 2025-01-27 (v2.0.1 - Patch release)
 **Status**: ✅ Production ready
 
 ---
@@ -145,6 +145,20 @@ mcp-fetch-url/
 ---
 
 ## 📝 Changelog
+
+### v2.0.1 - 2025-01-27 - Patch Release
+
+**Release Notes**
+- ✅ **Workflows Cursor créés** - 5 workflows automatisés pour le développement et les releases
+- ✅ **Documentation harmonisée** - Suppression des fichiers redondants (WORKFLOWS_LIST.md, COHERENCE.md)
+- ✅ **Tests validés** - Build, typecheck, health check et linter OK pour les deux projets
+
+**Git**
+- Commit: (sera complété après commit)
+- Tag: `2.0.1`
+- Branch: `develop` (préparation release)
+
+---
 
 ### v2.0.0 - 2025-01-27 - Migration to Gitflow with Develop
 
@@ -414,7 +428,7 @@ git config user.email "jessy.bonnotte@gmail.com"
    - `CONTEXT.md` → ajouter entrée changelog `### vX.Y.Z`
 5. 📝 **Créer MR** : Merge Request `develop` → `main` avec titre `Release X.Y.Z`
 6. ✅ **Validation MR** : L'utilisateur valide la MR
-7. 🔀 **Merge dans main** : Merge ou squash selon choix + créer tag `X.Y.Z` + push
+7. 🔀 **Merge dans main** : Merge avec **SQUASH** + créer tag `X.Y.Z` + push
 8. 🔄 **Synchronisation** : Merge normal `main` → `develop` (sans squash) + push
 
 **Règles importantes** :
