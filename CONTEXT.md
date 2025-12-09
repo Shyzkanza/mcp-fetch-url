@@ -152,12 +152,13 @@ mcp-fetch-url/
 - ✅ **Migration to gitflow classique** - Passage de `release/X.Y.Z` vers `develop`
 - ✅ **Workflow simplifié** : Développement sur `develop`, release sur `main` avec tag, puis mise à jour de `develop`
 - ✅ **Branches release supprimées** : Plus de branches `release/X.Y.Z`, tout le développement se fait sur `develop`
+- ✅ **Merge normal** : Plus de `--squash`, merge normal pour préserver l'historique complet
 - ✅ **Version 2.0.0** : Breaking change pour marquer la migration du workflow
 
 **Git**
-- Commit: (à compléter après commit)
-- Tag: `2.0.0` (à créer lors de la release)
-- Branch: `develop` (nouveau workflow)
+- Commit: `1cb75c8`
+- Tag: `2.0.0`
+- Branch: `main` (merged from develop)
 
 ---
 

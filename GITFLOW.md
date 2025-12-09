@@ -30,7 +30,8 @@ git config user.email "jessy.bonnotte@gmail.com"
 1. ✅ **Branche `develop` pour tout le développement**
 2. ❌ **PAS de commit direct sur `main`**
 3. ✅ **TOUT le développement se fait sur `develop`**
-4. ✅ **Merge OBLIGATOIREMENT avec `--squash` de `develop` vers `main`**
+4. ✅ **Merge normal de `develop` vers `main` (sans `--squash`)**
+5. ✅ **Après release : merge `main` vers `develop` pour synchroniser**
 
 ---
 
@@ -82,20 +83,17 @@ Avant de merger dans `main`, **OBLIGATOIREMENT** :
 
 ---
 
-### Étape 2 : Merger Develop dans Main avec SQUASH
+### Étape 2 : Merger Develop dans Main
 
-**⚠️ RÈGLE STRICTE : TOUJOURS `--squash`**
+**⚠️ RÈGLE : Merge normal (sans `--squash`)**
 
 ```bash
 # Passer sur main
 git checkout main
 git pull origin main
 
-# Merger avec squash (UN SEUL commit propre)
-git merge --squash develop
-
-# Commit avec message structuré
-git commit -m "chore: release X.Y.Z
+# Merger develop dans main (merge normal)
+git merge develop -m "chore: release X.Y.Z
 
 - Feature 1: description
 - Feature 2: description
@@ -106,11 +104,7 @@ git commit -m "chore: release X.Y.Z
 git log --oneline -1
 ```
 
-**Pourquoi `--squash` ?**
-- ✅ Historique propre sur `main` (un commit = une release)
-- ✅ Changelog clair et lisible
-- ✅ Facilite les reverts
-- ✅ Respect de gitflow
+**Note** : On utilise un merge normal (pas de `--squash`) pour préserver l'historique complet des commits de développement.
 
 ---
 
@@ -192,7 +186,7 @@ Avant de merger dans `main`, vérifier :
 - [ ] ✅ Build réussit (`npm run build`)
 - [ ] ✅ Tests passent (si présents)
 - [ ] ✅ Commits utilisent `jessy.bonnotte@gmail.com`
-- [ ] ✅ Merge avec `--squash`
+- [ ] ✅ Merge normal (sans `--squash`)
 - [ ] ✅ Tag créé au bon format (sans "v")
 - [ ] ✅ `develop` mis à jour avec `main` après release
 
@@ -200,14 +194,14 @@ Avant de merger dans `main`, vérifier :
 
 ## ❌ Erreurs à Éviter
 
-### 1. Merge sans Squash
+### 1. Merge avec Squash (OBSOLÈTE)
 
 ```bash
-# ❌ INCORRECT
-git merge develop
-
-# ✅ CORRECT
+# ❌ OBSOLÈTE (ne plus utiliser)
 git merge --squash develop
+
+# ✅ CORRECT (merge normal)
+git merge develop
 ```
 
 ### 2. Tag avec "v"
@@ -259,17 +253,16 @@ git push origin develop
 
 ## 🔄 Récupération d'Erreur
 
-### Si Vous Avez Mergé sans Squash
+### Si Vous Avez Besoin de Revenir en Arrière
 
 ```bash
 # Reset main au commit précédent
 git reset --hard HEAD~1
 
-# Refaire le merge avec squash
-git merge --squash develop
-git commit -m "chore: release X.Y.Z"
+# Refaire le merge normal
+git merge develop -m "chore: release X.Y.Z"
 
-# Force push
+# Force push (seulement si nécessaire)
 git push -f origin main
 ```
 
