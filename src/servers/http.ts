@@ -114,7 +114,7 @@ function createMcpServer(): Server {
   const server = new Server(
     {
       name: 'scrapidou',
-      version: '1.2.0',
+      version: '2.0.0',
     },
     {
       capabilities: {
@@ -389,7 +389,7 @@ export function createHttpServer() {
           JSON.stringify({
             status: 'ok',
             service: 'scrapidou',
-            version: '1.2.0',
+            version: '2.0.0',
             transport: 'streamable-http',
           })
         );

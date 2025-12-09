@@ -1,6 +1,6 @@
 # 🧠 CONTEXT - Scrapidou
 
-**Last update**: 2025-01-27
+**Last update**: 2025-01-27 (v2.0.0 - Migration to gitflow with develop)
 **Status**: ✅ Production ready
 
 ---
@@ -145,6 +145,21 @@ mcp-fetch-url/
 ---
 
 ## 📝 Changelog
+
+### v2.0.0 - 2025-01-27 - Migration to Gitflow with Develop
+
+**Release Notes**
+- ✅ **Migration to gitflow classique** - Passage de `release/X.Y.Z` vers `develop`
+- ✅ **Workflow simplifié** : Développement sur `develop`, release sur `main` avec tag, puis mise à jour de `develop`
+- ✅ **Branches release supprimées** : Plus de branches `release/X.Y.Z`, tout le développement se fait sur `develop`
+- ✅ **Version 2.0.0** : Breaking change pour marquer la migration du workflow
+
+**Git**
+- Commit: (à compléter après commit)
+- Tag: `2.0.0` (à créer lors de la release)
+- Branch: `develop` (nouveau workflow)
+
+---
 
 ### v1.2.0 - 2025-01-27 - Content Consistency
 
@@ -366,13 +381,13 @@ nvm use 20
 3. **Commit et push** (y compris les tags)
 4. **Le workflow GitHub Actions** publiera automatiquement sur npm si la version n'existe pas déjà.
 
-**Note** : Les tags doivent être créés sur la branche `main` après le merge de `release/X.Y.Z`.
+**Note** : Les tags doivent être créés sur la branche `main` après le merge de `develop`.
 
 ### Branches et Workflow Gitflow
 
 **Branches principales** :
 - **`main`** : Production (protégée, déploiement automatique)
-- **`release/X.Y.Z`** : Branche de préparation de release (ne déclenche PAS de déploiement)
+- **`develop`** : Développement (branche de développement continue)
 
 **⚠️ RÈGLES IMPORTANTES** :
 
@@ -387,9 +402,19 @@ git config user.email "jessy.bonnotte@gmail.com"
 
 Voir [GITFLOW.md](GITFLOW.md) pour le workflow complet.
 
+**Workflow classique** :
+- Développement sur `develop`
+- Release : `develop` → `main` (avec tag) via `--squash`
+- Après release : `main` → `develop` (mise à jour)
+
+**Workflow classique** :
+- Développement sur `develop`
+- Release : `develop` → `main` (avec tag) via `--squash`
+- Après release : `main` → `develop` (mise à jour)
+
 #### 3. Pourquoi le Squash Merge ?
 
-- ✅ Historique propre sur `main` (un commit par release)
+- ✅ Historique propre sur `main` (un commit = une release)
 - ✅ Changelog clair et lisible
 - ✅ Facilite les reverts si nécessaire
 - ✅ Respect de la convention gitflow

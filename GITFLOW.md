@@ -23,63 +23,50 @@ git config user.email "jessy.bonnotte@gmail.com"
 ### Branches Principales
 
 - **`main`** : Production (protégée, déploiement automatique)
-- **`release/X.Y.Z`** : Branche de préparation de release (ne déclenche PAS de déploiement)
+- **`develop`** : Développement (branche de développement continue)
 
 ### Règles
 
-1. ❌ **PAS de branche `develop`**
+1. ✅ **Branche `develop` pour tout le développement**
 2. ❌ **PAS de commit direct sur `main`**
-3. ✅ **TOUT le développement se fait sur `release/X.Y.Z`**
-4. ✅ **Merge OBLIGATOIREMENT avec `--squash`**
+3. ✅ **TOUT le développement se fait sur `develop`**
+4. ✅ **Merge OBLIGATOIREMENT avec `--squash` de `develop` vers `main`**
+
+---
+
+## 🚀 Workflow de Développement (OBLIGATOIRE)
+
+### Étape 1 : Développer sur Develop
+
+```bash
+# Travailler sur develop
+git checkout develop
+git pull origin develop
+
+# Faire vos commits
+git add .
+git commit -m "feat: nouvelle fonctionnalité"
+git push origin develop
+```
+
+**Points importants** :
+- ✅ Commits multiples autorisés sur `develop`
+- ✅ Tests, corrections, itérations
+- ✅ Branche `develop` est la branche de développement continue
 
 ---
 
 ## 🚀 Workflow de Release (OBLIGATOIRE)
 
-### Étape 1 : Créer une Branche Release
-
-```bash
-# Depuis main
-git checkout main
-git pull origin main
-
-# Créer la branche release (version suivante)
-git checkout -b release/X.Y.Z
-git push -u origin release/X.Y.Z
-```
-
-**Exemple** : Si `main` est en `1.0.0`, créer `release/1.0.1` pour les prochains développements
-
----
-
-### Étape 2 : Développer sur la Release
-
-```bash
-# Travailler sur release/X.Y.Z
-git checkout release/X.Y.Z
-
-# Faire vos commits
-git add .
-git commit -m "feat: nouvelle fonctionnalité"
-git push origin release/X.Y.Z
-```
-
-**Points importants** :
-- ✅ Commits multiples autorisés sur `release/X.Y.Z`
-- ✅ Tests, corrections, itérations
-- ❌ NE PAS merger dans `main` avant d'être prêt
-
----
-
-### Étape 3 : Préparer la Release Finale
+### Étape 1 : Préparer la Release Finale
 
 Avant de merger dans `main`, **OBLIGATOIREMENT** :
 
 1. **Incrémenter la version** dans `package.json`
 2. **Mettre à jour les versions** dans tous les fichiers source :
-   - `src/http-server.ts`
-   - `src/index.ts`
+   - `src/servers/http.ts`
    - `src/http-client.ts`
+   - `src/servers/stdio.ts`
    - Tout autre fichier contenant une version
 
 3. **Mettre à jour la documentation** :
@@ -95,7 +82,7 @@ Avant de merger dans `main`, **OBLIGATOIREMENT** :
 
 ---
 
-### Étape 4 : Merger dans Main avec SQUASH
+### Étape 2 : Merger Develop dans Main avec SQUASH
 
 **⚠️ RÈGLE STRICTE : TOUJOURS `--squash`**
 
@@ -105,7 +92,7 @@ git checkout main
 git pull origin main
 
 # Merger avec squash (UN SEUL commit propre)
-git merge --squash release/X.Y.Z
+git merge --squash develop
 
 # Commit avec message structuré
 git commit -m "chore: release X.Y.Z
@@ -127,7 +114,7 @@ git log --oneline -1
 
 ---
 
-### Étape 5 : Créer le Tag
+### Étape 3 : Créer le Tag
 
 **Format STRICT : `X.Y.Z` (SANS "v")**
 
@@ -151,27 +138,25 @@ Le tag doit **EXACTEMENT** correspondre à la version dans `package.json`.
 
 ---
 
-### Étape 6 : Nettoyer les Branches
+### Étape 4 : Mettre à Jour Develop
+
+**⚠️ IMPORTANT : Après chaque release, mettre à jour `develop` avec `main`**
 
 ```bash
-# Supprimer la branche release locale
-git branch -d release/X.Y.Z
+# Retourner sur develop
+git checkout develop
 
-# Supprimer la branche release remote
-git push origin --delete release/X.Y.Z
+# Merger main dans develop pour synchroniser
+git merge main
+
+# Push develop
+git push origin develop
 ```
 
----
-
-### Étape 7 : Créer la Prochaine Release
-
-```bash
-# Créer la branche pour la prochaine version
-git checkout -b release/X.Y.Z+1
-git push -u origin release/X.Y.Z+1
-```
-
-**Exemple** : Si vous venez de release `1.0.0`, créer `release/1.0.1`
+**Pourquoi ?**
+- ✅ `develop` reste synchronisée avec `main`
+- ✅ Les nouvelles features partent de la dernière release
+- ✅ Évite les conflits futurs
 
 ---
 
@@ -209,8 +194,7 @@ Avant de merger dans `main`, vérifier :
 - [ ] ✅ Commits utilisent `jessy.bonnotte@gmail.com`
 - [ ] ✅ Merge avec `--squash`
 - [ ] ✅ Tag créé au bon format (sans "v")
-- [ ] ✅ Branches nettoyées
-- [ ] ✅ Nouvelle branche release créée
+- [ ] ✅ `develop` mis à jour avec `main` après release
 
 ---
 
@@ -220,10 +204,10 @@ Avant de merger dans `main`, vérifier :
 
 ```bash
 # ❌ INCORRECT
-git merge release/1.0.0
+git merge develop
 
 # ✅ CORRECT
-git merge --squash release/1.0.0
+git merge --squash develop
 ```
 
 ### 2. Tag avec "v"
@@ -254,8 +238,21 @@ git checkout main
 git commit -m "fix"
 
 # ✅ CORRECT
-git checkout release/X.Y.Z
+git checkout develop
 git commit -m "fix"
+```
+
+### 5. Oublier de Mettre à Jour Develop
+
+```bash
+# ❌ INCORRECT
+# Après release, continuer sur develop sans merger main
+
+# ✅ CORRECT
+# Après release, merger main dans develop
+git checkout develop
+git merge main
+git push origin develop
 ```
 
 ---
@@ -269,7 +266,7 @@ git commit -m "fix"
 git reset --hard HEAD~1
 
 # Refaire le merge avec squash
-git merge --squash release/X.Y.Z
+git merge --squash develop
 git commit -m "chore: release X.Y.Z"
 
 # Force push
@@ -297,5 +294,4 @@ git push -f origin branch-name
 ---
 
 **Maintenu par** : Jessy Bonnotte  
-**Dernière mise à jour** : 2025-11-25
-
+**Dernière mise à jour** : 2025-01-27
