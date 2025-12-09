@@ -73,6 +73,13 @@
 - 🔄 L'utilisateur décide de faire une release
 - ❓ **L'IA DOIT demander la version** (ex: "Quelle version voulez-vous faire ? 2.1.0 ?")
 - ✅ Confirmation de la version
+- ✅ **Mettre à jour TOUS les fichiers** contenant la version :
+  - `package.json`
+  - `src/servers/http.ts` (toutes les occurrences)
+  - `src/http-client.ts` (si présent)
+  - `src/servers/stdio.ts` (si présent)
+  - `README.md` (badge version - ligne 6)
+  - `CONTEXT.md` (changelog avec nouvelle version)
 
 ### 3. Création de la MR
 - 📝 Créer une Merge Request `develop` → `main`

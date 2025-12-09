@@ -1,0 +1,194 @@
+---
+description: Processus complet de release avec mise à jour de toutes les versions
+globs: 
+alwaysApply: true
+---
+
+# Processus de Release - Checklist Complète
+
+## 🚨 RÈGLE CRITIQUE
+
+**Quand l'utilisateur demande de faire une release, un hotfix, ou n'importe quelle version :**
+
+1. ❓ **TOUJOURS demander la version** : "Quelle version voulez-vous faire ?" (ex: "2.1.0 ?")
+2. ✅ **Attendre confirmation** de l'utilisateur
+3. ✅ **Mettre à jour TOUS les fichiers** contenant la version (voir checklist ci-dessous)
+4. ✅ **Mettre à jour CONTEXT.md** avec le changelog
+5. ✅ **Créer la MR** avec titre `Release X.Y.Z`
+6. ✅ **Vérifier** que tous les fichiers sont cohérents
+
+---
+
+## 📋 Checklist Complète de Release
+
+### Étape 1 : Demander la Version
+
+```bash
+# ❓ TOUJOURS demander avant de commencer
+"Quelle version voulez-vous faire ? 2.1.0 ?"
+```
+
+### Étape 2 : Mettre à Jour Tous les Fichiers de Version
+
+#### ✅ package.json
+```json
+{
+  "version": "X.Y.Z"  // Mettre à jour ici
+}
+```
+
+#### ✅ src/servers/http.ts
+```typescript
+// Rechercher toutes les occurrences de version
+server.version = 'X.Y.Z';  // Dans createMcpServer()
+version: 'X.Y.Z',           // Dans /health endpoint
+```
+
+#### ✅ src/http-client.ts
+```typescript
+version: 'X.Y.Z',  // Si présent
+```
+
+#### ✅ src/servers/stdio.ts
+```typescript
+version: 'X.Y.Z',  // Si présent
+```
+
+#### ✅ README.md
+```markdown
+# Badge version (ligne 6)
+[![npm version](https://img.shields.io/badge/npm-vX.Y.Z-blue)](https://www.npmjs.com/package/@shyzus/mcp-scrapidou)
+```
+
+#### ✅ CONTEXT.md
+```markdown
+## 📝 Change History
+
+### vX.Y.Z - YYYY-MM-DD (Titre court)
+
+**Release Notes**
+- ✅ Feature 1: description
+- ✅ Feature 2: description
+- ✅ Fix: bug corrigé
+- ✅ Update: changement
+
+**Git**
+- Commit: (sera complété après commit)
+- Tag: `X.Y.Z`
+- Branch: `main` (merged from develop)
+```
+
+### Étape 3 : Vérifier la Cohérence
+
+```bash
+# Vérifier que toutes les versions correspondent
+grep -r "version.*:" src/ | grep -v node_modules
+grep '"version"' package.json
+grep "version.*badge" README.md || echo "Pas de badge version dans README"
+```
+
+### Étape 4 : Commit et MR
+
+```bash
+# Commit tous les changements
+git add package.json src/**/*.ts README.md CONTEXT.md
+git commit -m "chore: bump version to X.Y.Z
+
+- Update version in package.json
+- Update version in src/servers/http.ts
+- Update version in src/http-client.ts
+- Update version in src/servers/stdio.ts
+- Update README.md badge version
+- Update CONTEXT.md changelog"
+
+# Créer la MR (titre OBLIGATOIRE)
+# Titre: "Release X.Y.Z"
+```
+
+### Étape 5 : Après Validation MR
+
+```bash
+# Merge dans main (merge ou squash selon choix)
+git checkout main
+git merge develop  # ou git merge --squash develop
+
+# Créer tag
+git tag X.Y.Z -m "Release X.Y.Z"
+
+# Push
+git push origin main
+git push origin X.Y.Z
+
+# Synchroniser develop
+git checkout develop
+git merge main
+git push origin develop
+```
+
+---
+
+## 🔍 Fichiers à Vérifier par Projet
+
+### mcp-fetch-url-spe
+- ✅ `package.json` → `"version"`
+- ✅ `src/servers/http.ts` → `server.version` et `/health`
+- ✅ `src/http-client.ts` → `version`
+- ✅ `src/servers/stdio.ts` → `version`
+- ✅ `README.md` → Badge version (si présent)
+- ✅ `CONTEXT.md` → Changelog
+
+### mcp-fetch-url
+- ✅ `package.json` → `"version"`
+- ✅ `src/servers/http.ts` → `server.version` et `/health`
+- ✅ `src/http-client.ts` → `version`
+- ✅ `src/servers/stdio.ts` → `version`
+- ✅ `README.md` → Badge `[![npm version]` (ligne 6)
+- ✅ `CONTEXT.md` → Changelog
+
+---
+
+## ⚠️ Erreurs Courantes à Éviter
+
+1. ❌ **Oublier de demander la version** → TOUJOURS demander d'abord
+2. ❌ **Mettre à jour package.json mais pas les fichiers src/** → Vérifier tous les fichiers
+3. ❌ **Oublier le badge README.md** → Vérifier si badge présent
+4. ❌ **Oublier CONTEXT.md changelog** → TOUJOURS mettre à jour
+5. ❌ **Tag avec "v"** → Tag = `X.Y.Z` (sans "v")
+6. ❌ **Titre MR incorrect** → DOIT être `Release X.Y.Z`
+
+---
+
+## 📝 Template de Commit Message
+
+```
+chore: bump version to X.Y.Z
+
+- Update version in package.json
+- Update version in src/servers/http.ts
+- Update version in src/http-client.ts
+- Update version in src/servers/stdio.ts
+- Update README.md badge version (if present)
+- Update CONTEXT.md changelog
+```
+
+---
+
+## ✅ Validation Finale
+
+Avant de créer la MR, vérifier :
+
+```bash
+# 1. Toutes les versions sont identiques
+VERSION=$(node -p "require('./package.json').version")
+echo "Version dans package.json: $VERSION"
+grep -r "version.*'$VERSION'" src/ || echo "⚠️ Vérifier les versions dans src/"
+
+# 2. CONTEXT.md est à jour
+grep "### v$VERSION" CONTEXT.md || echo "⚠️ Ajouter changelog dans CONTEXT.md"
+
+# 3. README.md badge (si présent)
+grep "v$VERSION" README.md || echo "ℹ️ Pas de badge version dans README.md"
+
+# 4. On est sur develop
+git branch --show-current | grep develop || echo "⚠️ On doit être sur develop"
+```

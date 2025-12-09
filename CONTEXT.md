@@ -405,10 +405,17 @@ git config user.email "jessy.bonnotte@gmail.com"
 1. ✅ **Développement sur `develop`** : Tout le travail se fait sur `develop`
 2. 🔄 **Décision de release** : L'utilisateur décide de faire une release
 3. ❓ **Demander la version** : L'IA DOIT demander quelle version faire (ex: "Quelle version voulez-vous faire ? 2.1.0 ?")
-4. 📝 **Créer MR** : Merge Request `develop` → `main` avec titre `Release X.Y.Z`
-5. ✅ **Validation MR** : L'utilisateur valide la MR
-6. 🔀 **Merge dans main** : Merge ou squash selon choix + créer tag `X.Y.Z` + push
-7. 🔄 **Synchronisation** : Merge normal `main` → `develop` (sans squash) + push
+4. ✅ **Mettre à jour TOUS les fichiers** contenant la version :
+   - `package.json` → `"version": "X.Y.Z"`
+   - `src/servers/http.ts` → toutes les occurrences de `version: 'X.Y.Z'`
+   - `src/http-client.ts` → `version: 'X.Y.Z'` (si présent)
+   - `src/servers/stdio.ts` → `version: 'X.Y.Z'` (si présent)
+   - `README.md` → badge version ligne 6 `[![npm version](...vX.Y.Z...)]`
+   - `CONTEXT.md` → ajouter entrée changelog `### vX.Y.Z`
+5. 📝 **Créer MR** : Merge Request `develop` → `main` avec titre `Release X.Y.Z`
+6. ✅ **Validation MR** : L'utilisateur valide la MR
+7. 🔀 **Merge dans main** : Merge ou squash selon choix + créer tag `X.Y.Z` + push
+8. 🔄 **Synchronisation** : Merge normal `main` → `develop` (sans squash) + push
 
 **Règles importantes** :
 - ✅ **Toujours demander la version** avant de créer une MR
