@@ -114,7 +114,7 @@ function createMcpServer(): Server {
   const server = new Server(
     {
       name: 'scrapidou',
-      version: '1.1.0',
+      version: '1.2.0',
     },
     {
       capabilities: {
@@ -279,11 +279,14 @@ function createMcpServer(): Server {
         structuredContent.maxContentLength = maxContentLength;
       }
       
+      // Format pour ChatGPT : content et structuredContent contiennent les mêmes données
+      // content : JSON stringifié (pour compatibilité et fallback)
+      // structuredContent : JSON object (pour utilisation directe)
       return {
         content: [
           {
             type: 'text',
-            text: summary,
+            text: JSON.stringify(structuredContent, null, 2),
           },
         ],
         structuredContent,
@@ -386,7 +389,7 @@ export function createHttpServer() {
           JSON.stringify({
             status: 'ok',
             service: 'scrapidou',
-            version: '1.1.0',
+            version: '1.2.0',
             transport: 'streamable-http',
           })
         );
