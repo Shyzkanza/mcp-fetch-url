@@ -84,3 +84,30 @@ CORS_ORIGIN=*
 | `EADDRINUSE` | `npm run kill` |
 | `CORS error` | Vérifier `CORS_ORIGIN` |
 | `Cannot find module` | Ajouter `.js` |
+
+## Workflow Git et Releases
+
+### Développement
+- ✅ **Toujours développer sur `develop`**
+- ✅ **Pas de commit direct sur `main`**
+- ✅ **Développement continu sans interruption**
+
+### Processus de Release
+
+**⚠️ RÈGLE CRITIQUE : TOUJOURS demander la version avant de créer une MR**
+
+1. **Décision de release** : L'utilisateur décide de faire une release
+2. **❓ DEMANDER LA VERSION** : L'IA DOIT demander "Quelle version voulez-vous faire ?" (ex: "2.1.0 ?")
+3. **Créer MR** : Merge Request `develop` → `main`
+   - **Titre OBLIGATOIRE** : `Release X.Y.Z` (ex: `Release 2.1.0`)
+   - Description : résumé des changements
+4. **Validation MR** : L'utilisateur valide la MR
+5. **Merge dans main** : Merge ou squash selon choix + créer tag `X.Y.Z` (sans "v") + push
+6. **Synchronisation** : Merge normal `main` → `develop` (sans squash) + push
+
+**Format des tags** :
+- ❌ `v1.0.0` (avec "v")
+- ✅ `1.0.0` (sans "v")
+- ✅ Doit correspondre EXACTEMENT à la version dans `package.json`
+
+Voir [WORKFLOW.md](../WORKFLOW.md) pour le schéma détaillé.

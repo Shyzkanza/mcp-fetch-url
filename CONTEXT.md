@@ -399,15 +399,26 @@ git config user.email "jessy.bonnotte@gmail.com"
 ```
 **TOUJOURS vérifier avant de commit** : les commits doivent utiliser `jessy.bonnotte@gmail.com`
 
-#### 2. Workflow Simple
+#### 2. Workflow avec Merge Request
 
-**Règles** :
-- ✅ **Développement sur `develop`** : Tout le travail se fait sur `develop`
-- ✅ **Release quand demandé** : Merge `develop` → `main` (merge normal, sans `--squash`) + tag
-- ✅ **Synchronisation** : Après release, `main` → `develop` pour garder les branches alignées
-- ✅ **Pas de release automatique** : On fait une version uniquement quand demandé
+**Processus de Release** :
+1. ✅ **Développement sur `develop`** : Tout le travail se fait sur `develop`
+2. 🔄 **Décision de release** : L'utilisateur décide de faire une release
+3. ❓ **Demander la version** : L'IA DOIT demander quelle version faire (ex: "Quelle version voulez-vous faire ? 2.1.0 ?")
+4. 📝 **Créer MR** : Merge Request `develop` → `main` avec titre `Release X.Y.Z`
+5. ✅ **Validation MR** : L'utilisateur valide la MR
+6. 🔀 **Merge dans main** : Merge ou squash selon choix + créer tag `X.Y.Z` + push
+7. 🔄 **Synchronisation** : Merge normal `main` → `develop` (sans squash) + push
 
-#### 4. Format des Tags
+**Règles importantes** :
+- ✅ **Toujours demander la version** avant de créer une MR
+- ✅ **Titre MR = "Release X.Y.Z"** (format strict)
+- ✅ **Tag = X.Y.Z** (sans "v", correspond à package.json)
+- ✅ **Pas de release automatique** : uniquement quand demandé
+
+Voir [WORKFLOW.md](WORKFLOW.md) pour le schéma détaillé.
+
+#### 3. Format des Tags
 
 - ❌ `v1.0.0` (avec "v")
 - ✅ `1.0.0` (sans "v")
