@@ -399,26 +399,13 @@ git config user.email "jessy.bonnotte@gmail.com"
 ```
 **TOUJOURS vérifier avant de commit** : les commits doivent utiliser `jessy.bonnotte@gmail.com`
 
-#### 2. Workflow de Release (OBLIGATOIRE)
+#### 2. Workflow Simple
 
-Voir [GITFLOW.md](GITFLOW.md) pour le workflow complet.
-
-**Workflow classique** :
-- Développement sur `develop`
-- Release : `develop` → `main` (avec tag) via `--squash`
-- Après release : `main` → `develop` (mise à jour)
-
-**Workflow classique** :
-- Développement sur `develop`
-- Release : `develop` → `main` (avec tag) via `--squash`
-- Après release : `main` → `develop` (mise à jour)
-
-#### 3. Pourquoi le Squash Merge ?
-
-- ✅ Historique propre sur `main` (un commit = une release)
-- ✅ Changelog clair et lisible
-- ✅ Facilite les reverts si nécessaire
-- ✅ Respect de la convention gitflow
+**Règles** :
+- ✅ **Développement sur `develop`** : Tout le travail se fait sur `develop`
+- ✅ **Release quand demandé** : Merge `develop` → `main` (merge normal, sans `--squash`) + tag
+- ✅ **Synchronisation** : Après release, `main` → `develop` pour garder les branches alignées
+- ✅ **Pas de release automatique** : On fait une version uniquement quand demandé
 
 #### 4. Format des Tags
 
