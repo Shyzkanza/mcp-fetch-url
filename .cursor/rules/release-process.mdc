@@ -108,9 +108,12 @@ git commit -m "chore: bump version to X.Y.Z
 ### Étape 5 : Après Validation MR
 
 ```bash
-# Merge dans main (merge ou squash selon choix)
+# Merge dans main (avec SQUASH)
 git checkout main
-git merge develop  # ou git merge --squash develop
+git merge --squash develop
+git commit -m "chore: release X.Y.Z
+
+- (liste des changements de la release)"
 
 # Créer tag
 git tag X.Y.Z -m "Release X.Y.Z"
@@ -119,9 +122,9 @@ git tag X.Y.Z -m "Release X.Y.Z"
 git push origin main
 git push origin X.Y.Z
 
-# Synchroniser develop
+# Synchroniser develop (merge normal, SANS squash)
 git checkout develop
-git merge main
+git merge main  # Merge normal pour synchroniser
 git push origin develop
 ```
 

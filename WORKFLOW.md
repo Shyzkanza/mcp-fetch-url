@@ -30,9 +30,9 @@
 ┌─────────────────────────────────────────────────────────────┐
 │                    MERGE DANS MAIN                            │
 │                                                               │
-│  main ◄─────── merge/squash ─────── develop                  │
+│  main ◄─────── merge SQUASH ─────── develop                  │
 │                                                               │
-│  - Merge ou squash selon choix                               │
+│  - Merge avec SQUASH (un commit propre par release)           │
 │  - Créer tag X.Y.Z                                           │
 │  - Push main + tag                                            │
 │                                                               │
@@ -88,7 +88,7 @@
 
 ### 4. Validation et Merge
 - ✅ L'utilisateur valide la MR
-- 🔀 Merge ou squash dans `main` (selon choix)
+- 🔀 Merge avec **SQUASH** dans `main` (un commit propre par release)
 - 🏷️ Créer tag `X.Y.Z` (sans "v")
 - 📤 Push `main` + tag
 

@@ -102,8 +102,8 @@ CORS_ORIGIN=*
    - **Titre OBLIGATOIRE** : `Release X.Y.Z` (ex: `Release 2.1.0`)
    - Description : résumé des changements
 4. **Validation MR** : L'utilisateur valide la MR
-5. **Merge dans main** : Merge ou squash selon choix + créer tag `X.Y.Z` (sans "v") + push
-6. **Synchronisation** : Merge normal `main` → `develop` (sans squash) + push
+5. **Merge dans main** : Merge avec SQUASH + créer tag `X.Y.Z` (sans "v") + push
+6. **Synchronisation** : Merge normal `main` → `develop` (SANS squash) + push
 
 **Format des tags** :
 - ❌ `v1.0.0` (avec "v")
