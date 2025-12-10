@@ -269,7 +269,11 @@ MCP (Model Context Protocol) is an open standard created by Anthropic that allow
 
 ### Use with Cursor / Claude Desktop / Warp
 
-**The easiest way** - Install the npm client that connects to the remote server:
+You have **two options** to use Scrapidou:
+
+#### Option 1: Local Installation (Recommended for development)
+
+Install the npm client that runs locally:
 
 ```json
 {
@@ -282,10 +286,28 @@ MCP (Model Context Protocol) is an open standard created by Anthropic that allow
 }
 ```
 
+#### Option 2: Hosted Server (Recommended for production)
+
+Use the production server hosted on our VPS:
+
+```json
+{
+  "mcpServers": {
+    "mcp-scrapidou": {
+      "url": "https://scrapidou.rankorr.red/mcp"
+    }
+  }
+}
+```
+
 **Config file locations:**
 - **Cursor**: `~/.cursor/mcp.json` (macOS/Linux) or `%APPDATA%\Cursor\mcp.json` (Windows)
 - **Claude Desktop**: `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
 - **Warp**: In Warp AI settings
+
+**Which option to choose?**
+- **Local (npx)**: Better for development, always uses the latest version, requires Node.js
+- **Hosted (URL)**: No installation needed, always available, uses the stable production version
 
 ---
 
