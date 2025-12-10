@@ -3,7 +3,7 @@
 Scrapidou is a clean, modular MCP server for web scraping and URL fetching.
 
 [![Deploy Status](https://github.com/Shyzkanza/mcp-fetch-url/actions/workflows/deploy.yml/badge.svg)](https://github.com/Shyzkanza/mcp-fetch-url/actions/workflows/deploy.yml)
-[![npm version](https://img.shields.io/badge/npm-v1.1.0-blue)](https://www.npmjs.com/package/@shyzus/mcp-scrapidou)
+[![npm version](https://img.shields.io/badge/npm-v2.0.1-blue)](https://www.npmjs.com/package/@shyzus/mcp-scrapidou)
 [![npm downloads](https://img.shields.io/npm/dm/@shyzus/mcp-scrapidou?cacheSeconds=3600)](https://www.npmjs.com/package/@shyzus/mcp-scrapidou)
 [![Website Status](https://img.shields.io/website?url=https%3A%2F%2Fscrapidou.rankorr.red%2Fhealth&label=API)](https://scrapidou.rankorr.red/health)
 ![Node](https://img.shields.io/badge/node-20%2B-green)
@@ -269,7 +269,11 @@ MCP (Model Context Protocol) is an open standard created by Anthropic that allow
 
 ### Use with Cursor / Claude Desktop / Warp
 
-**The easiest way** - Install the npm client that connects to the remote server:
+You have **two options** to use Scrapidou:
+
+#### Option 1: Local Installation (Recommended for development)
+
+Install the npm client that runs locally:
 
 ```json
 {
@@ -282,10 +286,28 @@ MCP (Model Context Protocol) is an open standard created by Anthropic that allow
 }
 ```
 
+#### Option 2: Hosted Server (Recommended for production)
+
+Use the production server hosted on our VPS:
+
+```json
+{
+  "mcpServers": {
+    "mcp-scrapidou": {
+      "url": "https://scrapidou.rankorr.red/mcp"
+    }
+  }
+}
+```
+
 **Config file locations:**
 - **Cursor**: `~/.cursor/mcp.json` (macOS/Linux) or `%APPDATA%\Cursor\mcp.json` (Windows)
 - **Claude Desktop**: `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
 - **Warp**: In Warp AI settings
+
+**Which option to choose?**
+- **Local (npx)**: Better for development, always uses the latest version, requires Node.js
+- **Hosted (URL)**: No installation needed, always available, uses the stable production version
 
 ---
 

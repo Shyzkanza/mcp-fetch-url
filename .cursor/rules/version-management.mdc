@@ -10,7 +10,7 @@ La version doit être identique dans :
 
 1. **`package.json`** - `"version": "X.Y.Z"`
 2. **`src/servers/http.ts`** - Dans `createMcpServer()` et `/health`
-3. **Branche git** - `release/X.Y.Z` doit correspondre à la version
+3. **Branche git** - `develop` pour le développement, `main` pour les releases
 
 ## Documentation à Vérifier
 
@@ -40,13 +40,14 @@ Les 3 valeurs doivent correspondre !
 | Nouvelle feature | Minor (1.X.0) |
 | Breaking change | Major (X.0.0) |
 
-## Workflow Gitflow
+## Workflow Git avec Develop
 
-1. Créer `release/X.Y.Z` depuis `main`
-2. Développer sur la branche
-3. **AVANT merge** : vérifier que la version est à jour partout
-4. Merger avec `--squash` dans `main`
+1. Développer sur `develop`
+2. **AVANT release** : vérifier que la version est à jour partout
+3. Créer MR `develop` → `main` avec titre `Release X.Y.Z`
+4. Après validation MR : Merger avec **SQUASH** dans `main`
 5. Créer tag `X.Y.Z`
+6. Synchroniser `main` → `develop` (merge normal)
 
 ## Commande Utile
 

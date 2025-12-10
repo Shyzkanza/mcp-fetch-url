@@ -1,6 +1,6 @@
 # 🧠 CONTEXT - Scrapidou
 
-**Last update**: 2025-01-27 (v2.0.0 - Migration to gitflow with develop)
+**Last update**: 2025-01-27 (v2.0.1 - Patch release)
 **Status**: ✅ Production ready
 
 ---
@@ -145,6 +145,20 @@ mcp-fetch-url/
 ---
 
 ## 📝 Changelog
+
+### v2.0.1 - 2025-01-27 - Patch Release
+
+**Release Notes**
+- ✅ **Workflows Cursor créés** - 5 workflows automatisés pour le développement et les releases
+- ✅ **Documentation harmonisée** - Suppression des fichiers redondants (WORKFLOWS_LIST.md, COHERENCE.md)
+- ✅ **Tests validés** - Build, typecheck, health check et linter OK pour les deux projets
+
+**Git**
+- Commit: (sera complété après commit)
+- Tag: `2.0.1`
+- Branch: `develop` (préparation release)
+
+---
 
 ### v2.0.0 - 2025-01-27 - Migration to Gitflow with Develop
 
@@ -399,28 +413,33 @@ git config user.email "jessy.bonnotte@gmail.com"
 ```
 **TOUJOURS vérifier avant de commit** : les commits doivent utiliser `jessy.bonnotte@gmail.com`
 
-#### 2. Workflow de Release (OBLIGATOIRE)
+#### 2. Workflow avec Merge Request
 
-Voir [GITFLOW.md](GITFLOW.md) pour le workflow complet.
+**Processus de Release** :
+1. ✅ **Développement sur `develop`** : Tout le travail se fait sur `develop`
+2. 🔄 **Décision de release** : L'utilisateur décide de faire une release
+3. ❓ **Demander la version** : L'IA DOIT demander quelle version faire (ex: "Quelle version voulez-vous faire ? 2.1.0 ?")
+4. ✅ **Mettre à jour TOUS les fichiers** contenant la version :
+   - `package.json` → `"version": "X.Y.Z"`
+   - `src/servers/http.ts` → toutes les occurrences de `version: 'X.Y.Z'`
+   - `src/http-client.ts` → `version: 'X.Y.Z'` (si présent)
+   - `src/servers/stdio.ts` → `version: 'X.Y.Z'` (si présent)
+   - `README.md` → badge version ligne 6 `[![npm version](...vX.Y.Z...)]`
+   - `CONTEXT.md` → ajouter entrée changelog `### vX.Y.Z`
+5. 📝 **Créer MR** : Merge Request `develop` → `main` avec titre `Release X.Y.Z`
+6. ✅ **Validation MR** : L'utilisateur valide la MR
+7. 🔀 **Merge dans main** : Merge avec **SQUASH** + créer tag `X.Y.Z` + push
+8. 🔄 **Synchronisation** : Merge normal `main` → `develop` (sans squash) + push
 
-**Workflow classique** :
-- Développement sur `develop`
-- Release : `develop` → `main` (avec tag) via `--squash`
-- Après release : `main` → `develop` (mise à jour)
+**Règles importantes** :
+- ✅ **Toujours demander la version** avant de créer une MR
+- ✅ **Titre MR = "Release X.Y.Z"** (format strict)
+- ✅ **Tag = X.Y.Z** (sans "v", correspond à package.json)
+- ✅ **Pas de release automatique** : uniquement quand demandé
 
-**Workflow classique** :
-- Développement sur `develop`
-- Release : `develop` → `main` (avec tag) via `--squash`
-- Après release : `main` → `develop` (mise à jour)
+Voir [WORKFLOW.md](WORKFLOW.md) pour le schéma détaillé.
 
-#### 3. Pourquoi le Squash Merge ?
-
-- ✅ Historique propre sur `main` (un commit = une release)
-- ✅ Changelog clair et lisible
-- ✅ Facilite les reverts si nécessaire
-- ✅ Respect de la convention gitflow
-
-#### 4. Format des Tags
+#### 3. Format des Tags
 
 - ❌ `v1.0.0` (avec "v")
 - ✅ `1.0.0` (sans "v")

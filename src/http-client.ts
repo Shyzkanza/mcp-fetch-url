@@ -13,7 +13,7 @@ const SERVER_URL = process.argv[2] || 'https://scrapidou.rankorr.red/mcp';
 // Proxy HTTP MCP server to stdio for Cursor
 const server = new McpServer({
   name: 'scrapidou-http-proxy',
-      version: '2.0.0',
+      version: '2.0.1',
 });
 
 // Forward all requests to HTTP server
