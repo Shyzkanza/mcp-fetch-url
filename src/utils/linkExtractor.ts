@@ -5,6 +5,7 @@
 
 import * as cheerio from 'cheerio';
 import { RelatedLink } from '../types.js';
+import { normalizeUrl, extractLinkText } from './urlUtils.js';
 
 /**
  * Extrait les liens pertinents d'une page web
@@ -45,7 +46,7 @@ export function extractRelatedLinks(html: string, baseUrl: string): RelatedLink[
     // 5. Filtrer et dédupliquer
     const filteredLinks = filterAndDeduplicateLinks(links, baseUrlObj);
 
-    return filteredLinks.slice(0, 20); // Limiter à 20 liens max
+    return filteredLinks.slice(0, 50); // Limiter à 50 liens max
   } catch (error) {
     console.error('Error extracting links:', error);
     return [];
@@ -216,7 +217,7 @@ function extractLinksFromMainContent($: cheerio.CheerioAPI, baseUrl: URL): Relat
 
           const text = extractLinkText($link);
           const textLower = text.toLowerCase().trim();
-          if (text.length < 5 || 
+          if (text.length < 3 || 
               textLower.startsWith('modifier') ||
               textLower.includes('catégorie:') ||
               textLower.includes('category:') ||
@@ -293,7 +294,7 @@ function extractLinksFromMainContent($: cheerio.CheerioAPI, baseUrl: URL): Relat
       
       // Ignorer les liens avec texte trop court ou générique
       const textLower = text.toLowerCase().trim();
-      if (text.length < 5 || 
+      if (text.length < 3 || 
           textLower === 'lire' || 
           textLower === 'read' ||
           textLower.includes('modifier') ||
@@ -319,7 +320,7 @@ function extractLinksFromMainContent($: cheerio.CheerioAPI, baseUrl: URL): Relat
   });
 
   // Trier par pertinence (liens avec plus de texte = plus pertinents)
-  return links.sort((a, b) => b.text.length - a.text.length).slice(0, 10);
+  return links.sort((a, b) => b.text.length - a.text.length).slice(0, 30);
 }
 
 /**
@@ -414,29 +415,6 @@ function extractLinksFromAside($: cheerio.CheerioAPI, baseUrl: URL): RelatedLink
 }
 
 /**
- * Extrait le texte d'un lien
- */
-function extractLinkText($link: cheerio.Cheerio<any>): string {
-  // Essayer d'abord aria-label
-  const ariaLabel = $link.attr('aria-label');
-  if (ariaLabel) return ariaLabel.trim();
-
-  // Puis title
-  const title = $link.attr('title');
-  if (title) return title.trim();
-
-  // Puis le texte du lien
-  let text = $link.text().trim();
-
-  // Si le texte est vide, essayer de prendre le texte des enfants
-  if (!text) {
-    text = $link.find('img').attr('alt') || '';
-  }
-
-  return text || 'Link';
-}
-
-/**
  * Détermine le type de lien
  */
 function determineLinkType(
@@ -482,49 +460,37 @@ function isSocialMediaLink(href: string): boolean {
 }
 
 /**
- * Vérifie si un lien est un lien de navigation
+ * Vérifie si un lien est un lien de navigation (filtrage structurel)
+ *
+ * Utilise des critères fiables : classes CSS et segments de path exacts.
+ * Évite les faux positifs sur le texte du lien (ex: "Home run", "About quantum physics")
  */
 function isNavigationLink($link: cheerio.Cheerio<any>): boolean {
   const href = $link.attr('href')?.toLowerCase() || '';
-  const text = $link.text().toLowerCase();
   const classAttr = $link.attr('class')?.toLowerCase() || '';
 
-  // Liens de navigation communs
-  const navKeywords = [
-    'home',
-    'about',
-    'contact',
-    'privacy',
-    'terms',
-    'cookie',
-    'sitemap',
-    '#top',
-    '#main',
-    'javascript:',
-  ];
-
-  // Vérifier href
-  if (navKeywords.some((keyword) => href.includes(keyword))) {
+  // 1. Filtrage par classes CSS (haute confiance)
+  if (classAttr.includes('nav-') || classAttr.includes('-nav') ||
+      classAttr.includes('menu-') || classAttr.includes('-menu') ||
+      classAttr.includes('advertisement') || classAttr.includes('sponsor')) {
     return true;
   }
 
-  // Vérifier texte
-  if (navKeywords.some((keyword) => text.includes(keyword))) {
+  // 2. Filtrage par protocole/ancre
+  if (href.startsWith('javascript:') || href === '#top' || href === '#main') {
     return true;
   }
 
-  // Vérifier classes
-  if (classAttr.includes('nav') || classAttr.includes('menu')) {
-    return true;
-  }
-
-  // Liens avec classes de pub
-  if (
-    classAttr.includes('ad') ||
-    classAttr.includes('sponsor') ||
-    classAttr.includes('advertisement')
-  ) {
-    return true;
+  // 3. Filtrage par segments de path exacts (pas includes)
+  // "/about" est filtré, "/wiki/About_face" ne l'est pas
+  try {
+    const pathSegments = new URL(href, 'http://dummy').pathname.split('/').filter(Boolean);
+    const navSegments = ['privacy', 'terms', 'cookie', 'cookies', 'sitemap', 'contact'];
+    if (pathSegments.length === 1 && navSegments.includes(pathSegments[0])) {
+      return true;
+    }
+  } catch {
+    // URL invalide, ne pas filtrer
   }
 
   return false;
@@ -555,7 +521,7 @@ function filterAndDeduplicateLinks(
     }
 
     // Ignorer les liens trop courts (probablement pas des articles)
-    if (link.text.length < 10) {
+    if (link.text.length < 3) {
       continue;
     }
 
@@ -566,21 +532,4 @@ function filterAndDeduplicateLinks(
   return filtered;
 }
 
-/**
- * Normalise une URL pour la comparaison
- */
-function normalizeUrl(url: string): string {
-  try {
-    const urlObj = new URL(url);
-    // Enlever le fragment
-    urlObj.hash = '';
-    // Enlever le trailing slash (sauf pour la racine)
-    if (urlObj.pathname !== '/') {
-      urlObj.pathname = urlObj.pathname.replace(/\/$/, '');
-    }
-    return urlObj.href.toLowerCase();
-  } catch {
-    return url.toLowerCase();
-  }
-}
 

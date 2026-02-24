@@ -48,63 +48,43 @@ export function detectIssues(html: string): Issue[] {
 
 /**
  * Détecte les signaux de paywall
+ *
+ * Approche : CSS selectors (haute confiance) + phrases complètes dans les éléments interactifs.
+ * Évite de scanner body.text() pour des mots isolés (trop de faux positifs).
  */
 function detectPaywall($: cheerio.CheerioAPI): string[] {
   const signals: string[] = [];
 
-  // Mots-clés à chercher
-  const paywallKeywords = [
-    'subscribe',
-    'premium',
-    'paywall',
-    'members only',
-    'unlock',
-    'subscription required',
-    'premium content',
-    'pay to read',
-    'become a member',
-  ];
-
-  // Classes CSS communes pour paywall
-  const paywallClasses = [
+  // 1. Classes CSS de paywall (haute confiance)
+  const paywallSelectors = [
     '.paywall',
-    '.premium-content',
     '.subscription-required',
     '.members-only',
     '[class*="paywall"]',
-    '[class*="premium"]',
     '[id*="paywall"]',
+    '[data-paywall]',
   ];
 
-  const text = $('body').text().toLowerCase();
-
-  // Chercher les mots-clés dans le texte
-  for (const keyword of paywallKeywords) {
-    if (text.includes(keyword)) {
-      signals.push(`keyword: "${keyword}"`);
-    }
-  }
-
-  // Chercher les classes CSS de paywall
-  for (const selector of paywallClasses) {
+  for (const selector of paywallSelectors) {
     if ($(selector).length > 0) {
       signals.push(`element: ${selector}`);
     }
   }
 
-  // Chercher les messages explicites
-  const paywallMessages = $('*').filter((_, el) => {
-    const text = $(el).text().toLowerCase();
-    return (
-      text.includes('this article is for subscribers') ||
-      text.includes('subscribe to continue reading') ||
-      text.includes('premium content')
-    );
+  // 2. Phrases complètes dans les éléments interactifs (boutons, overlays, modals)
+  const interactiveSelectors = 'button, [class*="modal"], [class*="overlay"], [class*="banner"], [class*="gate"], [role="dialog"]';
+  $(interactiveSelectors).each((_, el) => {
+    const elText = $(el).text().toLowerCase();
+    if (elText.includes('subscribe to continue reading') ||
+        elText.includes('this article is for subscribers') ||
+        elText.includes('subscription required') ||
+        elText.includes('premium content') ||
+        elText.includes('pay to read') ||
+        elText.includes('become a member to read') ||
+        elText.includes('unlock this article')) {
+      signals.push('paywall message in interactive element');
+    }
   });
-
-  if (paywallMessages.length > 0) {
-    signals.push('explicit paywall message');
-  }
 
   return signals;
 }
@@ -173,46 +153,32 @@ function detectLoginRequired($: cheerio.CheerioAPI): string[] {
 
 /**
  * Détecte les signaux de contenu partiel
+ *
+ * Approche structurelle : cherche les boutons/gates qui bloquent le contenu,
+ * pas des mots isolés dans le body (trop de faux positifs).
  */
 function detectPartialContent($: cheerio.CheerioAPI): string[] {
   const signals: string[] = [];
 
-  // Mots-clés indiquant un contenu partiel
-  const partialKeywords = [
-    'continue reading',
-    'read more',
-    'preview',
-    'unlock full article',
-    'subscribe to read',
-    'read the full story',
-    'view full article',
-  ];
-
-  const text = $('body').text().toLowerCase();
-
-  for (const keyword of partialKeywords) {
-    if (text.includes(keyword)) {
-      signals.push(`keyword: "${keyword}"`);
-    }
-  }
-
-  // Chercher les boutons "Read more" ou "Continue reading"
-  const readMoreButtons = $('button, a').filter((_, el) => {
-    const text = $(el).text().toLowerCase();
+  // 1. Boutons "Read more" / "Continue reading" qui bloquent le contenu (pas les liens normaux)
+  const gateButtons = $('button, [class*="gate"], [class*="truncat"], [class*="expand"]').filter((_, el) => {
+    const elText = $(el).text().toLowerCase().trim();
     return (
-      text.includes('read more') ||
-      text.includes('continue reading') ||
-      text.includes('unlock')
+      elText.includes('continue reading') ||
+      elText.includes('unlock full article') ||
+      elText.includes('subscribe to read') ||
+      elText.includes('read the full story') ||
+      elText.includes('view full article')
     );
   });
 
-  if (readMoreButtons.length > 0) {
-    signals.push('read more button detected');
+  if (gateButtons.length > 0) {
+    signals.push('content gate detected');
   }
 
-  // Chercher les éléments avec classe "preview" ou "excerpt"
-  if ($('[class*="preview"], [class*="excerpt"]').length > 0) {
-    signals.push('preview/excerpt class detected');
+  // 2. Éléments structurels de troncature (overlays, gradients sur le contenu)
+  if ($('[class*="truncated-content"], [class*="article-truncat"], [class*="content-gate"]').length > 0) {
+    signals.push('truncated content structure detected');
   }
 
   return signals;

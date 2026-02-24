@@ -37,7 +37,7 @@ export interface MCPError {
 
 export interface FetchUrlInput {
   url: string;
-  contentFormat?: 'text' | 'html' | 'both'; // Default: 'text' - Format du contenu retourné: 'text' (texte nettoyé), 'html' (HTML complet), 'both' (les deux)
+  contentFormat?: 'text' | 'html' | 'markdown' | 'both'; // Default: 'text' - Format du contenu retourné: 'text' (texte nettoyé), 'html' (HTML complet), 'markdown' (Markdown optimisé LLM), 'both' (text + html)
   maxContentLength?: number; // Default: undefined (no limit) - Maximum number of characters to extract from content. Use for quick mapping/summaries. Leave undefined for complete analysis.
   detectIssues?: boolean; // Default: true - Detect issues like paywall, login required, partial content. Set to false for faster extraction.
   extractRelatedLinks?: boolean; // Default: true - Extract contextual links like "See also", "Related articles"
@@ -72,6 +72,7 @@ export interface FetchUrlOutput {
   metadata?: PageMetadata; // Page metadata (title, description, author, etc.)
   contentText?: string; // Cleaned text content (without HTML) - available in all modes
   contentHTML?: string; // Full HTML content - only in 'full' mode
+  contentMarkdown?: string; // Markdown content (optimized for LLMs) - only in 'markdown' mode
   content?: string; // @deprecated - Use contentHTML instead. Kept for backward compatibility
   relatedLinks?: RelatedLink[]; // Contextual links (if extractRelatedLinks is true)
   navigationLinks?: NavigationLink[]; // Navigation menu links (if extractNavigationLinks is true)
