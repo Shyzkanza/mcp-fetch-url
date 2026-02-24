@@ -5,6 +5,7 @@
 
 import * as cheerio from 'cheerio';
 import { NavigationLink } from '../types.js';
+import { normalizeUrl, extractLinkText } from './urlUtils.js';
 
 /**
  * Extrait les liens de navigation du menu latéral/sidebar
@@ -23,6 +24,7 @@ export function extractNavigationLinks(html: string, baseUrl: string): Navigatio
 
     // 1. Chercher dans les nav avec classes/id spécifiques (sidebar, menu, toc)
     const navigationSelectors = [
+      // Generic nav/aside selectors
       'nav[class*="sidebar"]',
       'nav[class*="menu"]',
       'nav[class*="toc"]',
@@ -49,34 +51,54 @@ export function extractNavigationLinks(html: string, baseUrl: string): Navigatio
       '[id*="toc"]',
       '[class*="table-of-contents"]',
       '[id*="table-of-contents"]',
+      // ARIA roles
+      '[role="navigation"]',
+      '[role="complementary"]',
+      // Docusaurus
+      '.theme-doc-sidebar-menu',
+      '.menu__list',
+      // VitePress
+      '.vp-sidebar',
+      '.VPSidebar',
+      // Nextra
+      '.nextra-sidebar-container',
+      // GitBook
+      '.gitbook-root nav',
+      // Wikipedia
+      '#mw-panel nav',
+      '#mw-panel',
+      // Generic data attributes
+      '[data-sidebar]',
+      '[data-nav]',
     ];
 
+    // Track already-processed DOM elements to avoid duplicates across selectors
+    const processedElements = new Set<any>();
+
     for (const selector of navigationSelectors) {
-      const $nav = $(selector).first();
-      if ($nav.length > 0) {
-        // Vérifier que c'est bien un menu latéral (pas header/footer)
-        const $parent = $nav.parent();
-        const parentClasses = ($parent.attr('class') || '').toLowerCase();
-        const parentId = ($parent.attr('id') || '').toLowerCase();
-        
-        // Exclure si c'est dans header/footer
-        if (parentClasses.includes('header') || parentId.includes('header') ||
-            parentClasses.includes('footer') || parentId.includes('footer')) {
-          continue;
+      $(selector).each((_, el) => {
+        const $nav = $(el);
+
+        // Skip already-processed elements
+        if (processedElements.has(el)) return;
+        processedElements.add(el);
+
+        // Exclure si c'est dans un header/footer (remonter les ancêtres)
+        if ($nav.closest('header, footer').length > 0) {
+          return;
         }
 
         const navLinks = extractLinksFromNavigation($, $nav, baseUrlObj, baseDomain);
         if (navLinks.length > 0) {
           links.push(...navLinks);
-          break; // Prendre le premier menu trouvé
         }
-      }
+      });
     }
 
     // 2. Filtrer et dédupliquer
     const filteredLinks = filterAndDeduplicateNavigationLinks(links, baseUrlObj);
 
-    return filteredLinks.slice(0, 50); // Limiter à 50 liens max
+    return filteredLinks.slice(0, 200); // Limiter à 200 liens max
   } catch (error) {
     console.error('Error extracting navigation links:', error);
     return [];
@@ -154,29 +176,6 @@ function extractLinksFromNavigation(
 }
 
 /**
- * Extrait le texte d'un lien
- */
-function extractLinkText($link: cheerio.Cheerio<any>): string {
-  // Essayer d'abord aria-label
-  const ariaLabel = $link.attr('aria-label');
-  if (ariaLabel) return ariaLabel.trim();
-
-  // Puis title
-  const title = $link.attr('title');
-  if (title) return title.trim();
-
-  // Puis le texte du lien
-  let text = $link.text().trim();
-
-  // Si le texte est vide, essayer de prendre le texte des enfants
-  if (!text) {
-    text = $link.find('img').attr('alt') || '';
-  }
-
-  return text || 'Link';
-}
-
-/**
  * Filtre et déduplique les liens de navigation
  */
 function filterAndDeduplicateNavigationLinks(
@@ -217,21 +216,4 @@ function filterAndDeduplicateNavigationLinks(
   return filtered;
 }
 
-/**
- * Normalise une URL pour la comparaison
- */
-function normalizeUrl(url: string): string {
-  try {
-    const urlObj = new URL(url);
-    // Enlever le fragment
-    urlObj.hash = '';
-    // Enlever le trailing slash (sauf pour la racine)
-    if (urlObj.pathname !== '/') {
-      urlObj.pathname = urlObj.pathname.replace(/\/$/, '');
-    }
-    return urlObj.href.toLowerCase();
-  } catch {
-    return url.toLowerCase();
-  }
-}
 

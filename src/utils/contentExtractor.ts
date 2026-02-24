@@ -17,39 +17,42 @@ import * as cheerio from 'cheerio';
 export function extractTextContent(html: string, url: string): string {
   // D'abord extraire le contenu principal HTML
   const mainContentHtml = extractMainContent(html, url);
-  
+
   // Convertir le HTML en texte lisible
   const $ = cheerio.load(mainContentHtml);
-  
+
   // Enlever les éléments non-textuels
   $('script, style, noscript').remove();
-  
-  // Extraire le texte
-  let text = $.text();
-  
-  // Nettoyer le texte : enlever les espaces multiples, sauts de ligne excessifs
-  text = text
-    .replace(/\s+/g, ' ') // Remplacer tous les espaces multiples par un seul
-    .replace(/\n\s*\n\s*\n/g, '\n\n') // Limiter les sauts de ligne multiples à 2 max
-    .trim();
-  
-  // Séparer les paragraphes de manière plus lisible
-  // Si on a des balises <p>, <h1-h6>, etc., on peut les utiliser pour structurer
+
+  // ÉTAPE 1 : Essayer l'extraction structurée par paragraphes (toujours préférée)
   const paragraphs: string[] = [];
-  $('p, h1, h2, h3, h4, h5, h6, li').each((_, el) => {
+  $('p, h1, h2, h3, h4, h5, h6, li, blockquote, pre').each((_, el) => {
     const $el = $(el);
+    const tagName = el.type === 'tag' ? (el as any).name?.toLowerCase() : '';
     const paragraphText = $el.text().trim();
     if (paragraphText.length > 0) {
-      paragraphs.push(paragraphText);
+      // Ajouter des marqueurs pour les headings (structure lisible)
+      if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tagName)) {
+        paragraphs.push(`${'#'.repeat(parseInt(tagName[1]))} ${paragraphText}`);
+      } else {
+        paragraphs.push(paragraphText);
+      }
     }
   });
-  
-  // Si on a trouvé des paragraphes structurés, les utiliser
-  if (paragraphs.length > 5) {
+
+  // Utiliser les paragraphes structurés si on en a trouvé au moins 2
+  if (paragraphs.length >= 2) {
     return paragraphs.join('\n\n');
   }
-  
-  // Sinon, retourner le texte nettoyé
+
+  // ÉTAPE 2 : Fallback - nettoyer le texte en préservant les sauts de ligne
+  let text = $.text();
+  text = text
+    .replace(/[ \t]+/g, ' ')              // Espaces horizontaux multiples -> un seul (préserve \n)
+    .replace(/\n[ \t]*/g, '\n')           // Nettoyer espaces en début de ligne
+    .replace(/\n{3,}/g, '\n\n')           // Limiter les sauts de ligne consécutifs à 2 max
+    .trim();
+
   return text;
 }
 
@@ -72,17 +75,17 @@ export function extractMainContent(html: string, url: string): string {
       // (pas juste des éléments de navigation/header)
       const $test = cheerio.load(article.content);
       const textContent = $test.text().trim();
-      
-      // Si le contenu extrait contient beaucoup de balises custom/attributs data-,
-      // c'est probablement du header/navigation, pas du contenu réel
-      const hasTooManyDataAttributes = (article.content.match(/data-\w+/g) || []).length > 10;
+
+      // Détecter les custom elements (web components) - signe de header/navigation
       const hasTooManyCustomElements = (article.content.match(/<[a-z]+-[a-z-]+/gi) || []).length > 5;
-      
+
       // Si le texte extrait est trop court par rapport au HTML, c'est suspect
       const textToHtmlRatio = textContent.length / article.content.length;
-      
+
       // Si Readability semble avoir extrait du contenu utile
-      if (!hasTooManyDataAttributes && !hasTooManyCustomElements && textToHtmlRatio > 0.1) {
+      // Note: data-* attributes sont courants dans le HTML moderne (Wikipedia, etc.)
+      // et ne sont pas un indicateur fiable de contenu non-article
+      if (!hasTooManyCustomElements && textToHtmlRatio > 0.1) {
         const cleaned = cleanContent(article.content);
         if (cleaned.trim().length > 100) {
           return cleaned;

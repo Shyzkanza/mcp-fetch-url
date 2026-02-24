@@ -98,9 +98,9 @@ export async function fetchPage(
         );
       }
 
-      // Vérifier le Content-Type
+      // Vérifier le Content-Type (tolérant si absent, accepte xhtml+xml)
       const contentType = response.headers.get('content-type') || '';
-      if (!contentType.includes('text/html')) {
+      if (contentType && !contentType.includes('text/html') && !contentType.includes('application/xhtml+xml')) {
         throw new NetworkError(
           `Expected HTML content, got: ${contentType}`,
           { contentType, url: currentUrl }
