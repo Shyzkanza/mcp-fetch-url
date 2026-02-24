@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - '*.*.*'
 
 concurrency:
   group: release-${{ github.ref }}
@@ -26,6 +26,7 @@ jobs:
         cache: 'npm'
     - run: npm ci --ignore-scripts
     - run: npx tsc --noEmit
+    - run: npm test
     - run: npm run build
 
   # Job 2: Build & push Docker image
@@ -48,7 +49,7 @@ jobs:
 
     - name: Extract version from tag
       id: version
-      run: echo "tag=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+      run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
     - name: Build and push
       uses: docker/build-push-action@v6
