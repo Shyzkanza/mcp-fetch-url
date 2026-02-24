@@ -120,6 +120,8 @@ jobs:
         registry-url: 'https://registry.npmjs.org'
         cache: 'npm'
     - run: npm ci --ignore-scripts
+    - name: Set version from tag
+      run: npm version ${{ github.ref_name }} --no-git-tag-version
     - run: npm run build
     - run: npm publish --access public
       env:
