@@ -32,8 +32,9 @@ This application allows **ChatGPT** and other MCP clients to fetch and scrape we
 ### ✨ Features
 
 - 🌐 **URL Fetching** - Retrieve content from any URL with proper headers and redirect handling
-- 📄 **Flexible Extraction** - Control content format (`text`, `html`, `both`), size (`maxContentLength`), issue detection, and link extraction independently
+- 📄 **Flexible Extraction** - Control content format (`text`, `html`, `markdown`, `both`), size (`maxContentLength`), issue detection, and link extraction independently
 - 📝 **Text Content Extraction** - Clean text extraction without HTML tags for LLM consumption
+- 📑 **Markdown Extraction** - Structured Markdown with headings, links, code blocks, emphasis - optimized for LLM analysis
 - 🎨 **HTML Content Extraction** - Full HTML content preservation in `full` mode (formatting, images, citations)
 - 🔍 **Issue Detection** - Automatically detect paywalls, login requirements, and partial content
 - 🔗 **Related Links** - Extract relevant links (see also, related articles) while filtering ads and navigation
@@ -57,7 +58,7 @@ Or:
 > "Get the full HTML content from https://docs.example.com/page"
 
 ChatGPT will use the MCP server to fetch, extract, and return the content according to the selected parameters:
-- **Content format**: Choose between `text` (clean text, default), `html` (full HTML), or `both`
+- **Content format**: Choose between `text` (clean text, default), `markdown` (structured Markdown), `html` (full HTML), or `both` (text + HTML)
 - **Content size control**: Use `maxContentLength` for quick mapping (500-1000 chars) or leave `undefined` for complete analysis
 - **Issue detection**: Control with `detectIssues` parameter (default: `true`)
 - **Link extraction**: Configure `extractRelatedLinks` and `extractNavigationLinks` independently
@@ -68,20 +69,31 @@ ChatGPT will use the MCP server to fetch, extract, and return the content accord
 
 ### What is extracted?
 
-The tool extracts two types of content, and you can choose which one(s) to return:
+The tool extracts three types of content, and you can choose which one(s) to return:
 
 1. **`contentText`** (Text content)
    - **What it is**: Clean, readable text extracted from the main content of the page
-   - **How it's extracted**: 
+   - **How it's extracted**:
      - Uses Mozilla Readability algorithm to identify the main content
      - Removes HTML tags, scripts, styles
      - Cleans up whitespace and formatting
-     - Preserves paragraph structure
+     - Preserves paragraph structure with heading markers (`#`, `##`, etc.)
    - **Available when**: `contentFormat: 'text'` or `contentFormat: 'both'` (default: `'text'`)
    - **Use case**: Perfect for LLM consumption, summarization, analysis
    - **No size limit**: Full content is returned in `structuredContent.contentText`
 
-2. **`contentHTML`** (HTML content)
+2. **`contentMarkdown`** (Markdown content)
+   - **What it is**: Structured Markdown with headings, links, code blocks, emphasis
+   - **How it's extracted**:
+     - Uses Mozilla Readability to extract the main content
+     - Converts to Markdown via Turndown with ATX headings, fenced code blocks, inline links
+     - Preserves code block languages (e.g. ` ```python `)
+     - Removes images (not useful for LLM text analysis)
+   - **Available when**: `contentFormat: 'markdown'`
+   - **Use case**: Best for LLM analysis - preserves structure, links, and code formatting
+   - **No size limit**: Full content is returned in `structuredContent.contentMarkdown`
+
+3. **`contentHTML`** (HTML content)
    - **What it is**: Full HTML of the main content area (preserves formatting, structure)
    - **How it's extracted**:
      - Uses Mozilla Readability to extract the main content HTML
@@ -111,10 +123,11 @@ All responses follow this structure:
   structuredContent: {
     type: 'webpage',
     url: 'https://example.com',
-    contentFormat: 'text', // 'text' | 'html' | 'both'
+    contentFormat: 'text', // 'text' | 'markdown' | 'html' | 'both'
     maxContentLength: undefined, // Optional: limit content size (undefined = no limit)
     metadata: { title, description, author, publishedDate },
     contentText: '...', // Text content (truncated if maxContentLength specified)
+    contentMarkdown: '...', // Markdown content (if contentFormat: 'markdown')
     contentHTML: '...', // HTML content (if contentFormat: 'html' or 'both')
     issues: [{ type: 'paywall', message: '...' }], // Empty array if detectIssues: false
     relatedLinks: [{ url, text, type }], // All links (no limit)
@@ -135,14 +148,16 @@ All responses follow this structure:
 |----------|----------------|-------------------|----------------|----------------------|--------------------------|
 | Quick mapping/summary | `text` | `500-1000` | `false` | `false` | `false` |
 | Article/blog post | `text` | `undefined` (full) | `true` (default) | `true` (default) | `false` |
+| LLM deep analysis | `markdown` | `undefined` (full) | `true` (default) | `true` (default) | `false` |
 | Wikipedia page | `text` | `undefined` (full) | `true` (default) | `true` (default) | `false` |
-| Documentation site | `text` | `undefined` (full) | `true` (default) | `false` | `true` |
+| Documentation site | `markdown` | `undefined` (full) | `true` (default) | `false` | `true` |
 | Need HTML content | `html` | `undefined` (full) | `true` (default) | `true` (default) | `true` (if needed) |
 | Need both text & HTML | `both` | `undefined` (full) | `true` (default) | `true` (default) | `true` (if needed) |
 | Technical analysis | `html` | `undefined` (full) | `true` (default) | `false` | `true` |
 | Preview/quick read | `text` | `2000-5000` | `true` (default) | `true` (default) | `false` |
 
 **Notes**:
+- `'markdown'` is the best format for LLM analysis - it preserves structure, links, and code blocks.
 - When `contentFormat` is `'html'` or `'both'`, the tool automatically extracts HTML internally.
 - Use `maxContentLength` for quick mapping/summaries (500-1000 chars) or previews (2000-5000 chars). Leave `undefined` for complete analysis.
 - Set `detectIssues: false` for faster extraction when you know the content is freely accessible.
@@ -157,6 +172,12 @@ Controls what type of content is returned:
   - Returns `structuredContent.contentText` with text content
   - Perfect for LLM analysis, summarization, general understanding
   - Available in all modes
+
+- **`contentFormat: 'markdown'`**
+  - Returns `structuredContent.contentMarkdown` with structured Markdown
+  - ATX headings (`##`), fenced code blocks (` ``` `), inline links (`[text](url)`)
+  - Preserves code block languages, bold, italic, lists
+  - Best for LLM analysis - richest structure while remaining text-based
 
 - **`contentFormat: 'html'`**
   - Returns `structuredContent.contentHTML` with HTML content
@@ -212,10 +233,18 @@ Controls whether to detect issues on the page:
 **Text Content (`contentText`)**:
 - Extracted using Mozilla Readability algorithm
 - Removes HTML tags, scripts, styles, ads
-- Preserves paragraph structure
+- Preserves paragraph structure with heading markers (`#`, `##`, etc.)
 - Cleaned whitespace and formatting
 - **Available when**: `contentFormat: 'text'` or `'both'`
 - **Size control**: Use `maxContentLength` to limit extraction (default: no limit - full content)
+
+**Markdown Content (`contentMarkdown`)**:
+- Extracted using Mozilla Readability + Turndown conversion
+- ATX headings, fenced code blocks with language detection, inline links
+- Bold (`**text**`), italic (`*text*`), bullet lists (`- item`)
+- Removes images (not useful for LLM text analysis)
+- **Available when**: `contentFormat: 'markdown'`
+- **Size control**: Use `maxContentLength` to limit extraction (default: no limit)
 
 **HTML Content (`contentHTML`)**:
 - Extracted using Mozilla Readability algorithm
@@ -369,23 +398,29 @@ mcp-fetch-url/
 │   ├── client/
 │   │   └── httpClient.ts      # HTTP client avec headers, redirections, timeout
 │   ├── tools/
-│   │   └── fetchUrl.ts        # Tool MCP: fetch_url
-│   ├── resources/             # Templates (future)
+│   │   ├── fetchUrl.ts        # Tool MCP: fetch_url (logic)
+│   │   └── fetchUrlSchema.ts  # Tool schema (shared between stdio/http)
 │   ├── servers/
 │   │   ├── stdio.ts           # Serveur stdio (IDEs)
 │   │   └── http.ts            # Serveur Streamable HTTP (ChatGPT)
 │   ├── utils/
 │   │   ├── errors.ts          # Gestion erreurs centralisée
-│   │   ├── contentExtractor.ts # Extraction contenu (Readability + fallback) + text extraction
+│   │   ├── urlUtils.ts        # URL normalization, link text extraction
+│   │   ├── contentExtractor.ts # Extraction contenu (Readability + fallback)
+│   │   ├── markdownExtractor.ts # Conversion HTML → Markdown (Turndown)
 │   │   ├── issueDetector.ts   # Détection paywall, login, contenu partiel
 │   │   ├── linkExtractor.ts   # Extraction liens pertinents (related links)
-│   │   └── navigationExtractor.ts # Extraction liens navigation (sidebar/menu)
+│   │   ├── navigationExtractor.ts # Extraction liens navigation (sidebar/menu)
+│   │   └── __tests__/         # Unit tests (Vitest)
 │   ├── index.ts               # Entry point stdio
 │   ├── http-server.ts         # Entry point HTTP
 │   └── http-client.ts         # Client npm
 ├── dist/                      # Compiled code (generated)
 ├── Dockerfile                 # Multi-stage Docker image
-├── docker-compose.yml         # Stack with Traefik labels
+├── docker-compose.yml         # Docker Swarm stack with Traefik labels
+├── .github/workflows/
+│   ├── ci.yml                 # CI: tests + typecheck on push/PR
+│   └── release.yml            # Release: test → Docker → deploy → npm
 ├── .nvmrc                     # Node version (20)
 ├── package.json               # Server dependencies
 ├── tsconfig.json              # TypeScript config
@@ -409,6 +444,8 @@ npm run dev              # Terminal 2: Dev server with hot-reload
 npm run dev:tunnel       # Dev + ngrok in parallel
 
 # Testing
+npm test                 # Run unit tests
+npm run test:watch       # Run tests in watch mode
 npm run inspect          # Launch MCP Inspector
 npm run health           # Health check
 
@@ -459,9 +496,13 @@ This project serves as a **template/base** for future MCP servers with a clean, 
 - **`types.ts`**: Shared TypeScript interfaces
 - **`client/httpClient.ts`**: HTTP client abstraction (fetch, headers, redirects, timeout)
 - **`tools/fetchUrl.ts`**: Business logic (validation, extraction orchestration)
+- **`tools/fetchUrlSchema.ts`**: Tool schema shared between stdio and HTTP servers
+- **`utils/urlUtils.ts`**: URL normalization, link text extraction (shared utility)
 - **`utils/contentExtractor.ts`**: Content extraction (Readability + fallback)
+- **`utils/markdownExtractor.ts`**: HTML to Markdown conversion (Turndown)
 - **`utils/issueDetector.ts`**: Issue detection (paywall, login, partial content)
 - **`utils/linkExtractor.ts`**: Related links extraction and filtering
+- **`utils/navigationExtractor.ts`**: Sidebar/menu navigation links extraction
 - **`servers/`**: MCP implementation (stdio/Streamable HTTP), reuses tools
 - **`utils/errors.ts`**: Custom error classes, formatting
 
