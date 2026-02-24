@@ -68,16 +68,8 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Copy compose file to VPS
-      uses: appleboy/scp-action@v0.1.7
-      with:
-        host: ${{ secrets.VPS_HOST }}
-        username: ${{ secrets.VPS_USER }}
-        key: ${{ secrets.VPS_SSH_KEY }}
-        passphrase: ${{ secrets.VPS_SSH_PASSPHRASE }}
-        source: "docker-compose.yml"
-        target: "/opt/scrapidou/"
-        overwrite: true
+    - name: Encode compose file
+      run: echo "COMPOSE_B64=$(base64 -w 0 docker-compose.yml)" >> $GITHUB_ENV
 
     - name: Deploy stack
       uses: appleboy/ssh-action@v1
@@ -86,7 +78,10 @@ jobs:
         username: ${{ secrets.VPS_USER }}
         key: ${{ secrets.VPS_SSH_KEY }}
         passphrase: ${{ secrets.VPS_SSH_PASSPHRASE }}
+        envs: COMPOSE_B64
         script: |
+          mkdir -p /opt/scrapidou
+          echo "$COMPOSE_B64" | base64 -d > /opt/scrapidou/docker-compose.yml
           docker pull ghcr.io/shyzkanza/mcp-scrapidou:latest
           docker stack deploy -c /opt/scrapidou/docker-compose.yml scrapidou
           sleep 15
