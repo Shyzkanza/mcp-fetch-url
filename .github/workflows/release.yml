@@ -51,6 +51,9 @@ jobs:
       id: version
       run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
+    - name: Set version from tag
+      run: npm version ${{ github.ref_name }} --no-git-tag-version
+
     - name: Build and push
       uses: docker/build-push-action@v6
       with:
