@@ -87,6 +87,7 @@ jobs:
           echo "$COMPOSE_B64" | base64 -d > ~/scrapidou/docker-compose.yml
           docker pull ghcr.io/shyzkanza/mcp-scrapidou:latest
           docker stack deploy -c ~/scrapidou/docker-compose.yml scrapidou
+          docker service update --force --image ghcr.io/shyzkanza/mcp-scrapidou:latest scrapidou_mcp-scrapidou
           sleep 15
           docker service ls --filter name=scrapidou
 
