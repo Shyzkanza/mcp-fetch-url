@@ -388,6 +388,27 @@ npx @modelcontextprotocol/inspector node dist/index.js
 
 ---
 
+## 🧪 Tests
+
+```bash
+# Run tests
+npm test
+
+# Watch mode
+npm run test:watch
+```
+
+88 tests across 7 suites:
+- `errors.test.ts` — Error classes, formatting, network detection (17 tests)
+- `urlUtils.test.ts` — URL normalization, link text extraction (14 tests)
+- `issueDetector.test.ts` — Paywall, login, partial content detection (16 tests)
+- `linkExtractor.test.ts` — Related links extraction and filtering (13 tests)
+- `navigationExtractor.test.ts` — Sidebar/menu navigation links (12 tests)
+- `contentExtractor.test.ts` — Readability extraction + fallback (9 tests)
+- `markdownExtractor.test.ts` — HTML to Markdown conversion (7 tests)
+
+---
+
 ## 📂 Project Structure
 
 ```
