@@ -116,17 +116,34 @@ jobs:
     name: Publish to npm
     runs-on: ubuntu-latest
     needs: health-check
+    # Trusted publishing (OIDC) : plus de NPM_TOKEN à faire expirer — celui du 2026-02-24
+    # a fait échouer la 2.2.4 en E404. Exige le dépôt déclaré « trusted publisher » sur npmjs.com.
+    permissions:
+      contents: read
+      id-token: write
     steps:
     - uses: actions/checkout@v4
+    # Trusted publishing exige npm >= 11.5.1 (Node 24) ; check-latest évite un 24.x ancien en cache
     - uses: actions/setup-node@v4
       with:
-        node-version: '22'
+        node-version: '24'
+        check-latest: true
         registry-url: 'https://registry.npmjs.org'
         cache: 'npm'
     - run: npm ci --ignore-scripts
     - name: Set version from tag
-      run: npm version ${{ github.ref_name }} --no-git-tag-version
+      run: npm version ${{ github.ref_name }} --no-git-tag-version --allow-same-version
     - run: npm run build
-    - run: npm publish --access public
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+    - name: Check if version already published
+      id: check-version
+      run: |
+        PACKAGE_VERSION=$(node -p "require('./package.json').version")
+        if npm view @shyzus/mcp-scrapidou@$PACKAGE_VERSION version 2>/dev/null; then
+          echo "Version $PACKAGE_VERSION already published, skipping"
+          echo "skip=true" >> $GITHUB_OUTPUT
+        else
+          echo "skip=false" >> $GITHUB_OUTPUT
+        fi
+    - name: Publish to npm (OIDC, provenance automatique)
+      if: steps.check-version.outputs.skip == 'false'
+      run: npm publish --access public
