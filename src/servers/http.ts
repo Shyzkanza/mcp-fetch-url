@@ -9,8 +9,13 @@
  * - GET /health : Health check
  */
 
+import { readFileSync } from 'node:fs';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { URL } from 'node:url';
+
+const VERSION = JSON.parse(
+  readFileSync(new URL('../../package.json', import.meta.url), 'utf-8')
+).version as string;
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
@@ -40,7 +45,7 @@ function createMcpServer(): Server {
   const server = new Server(
     {
       name: 'scrapidou',
-      version: '2.0.1',
+      version: VERSION,
     },
     {
       capabilities: {
@@ -336,7 +341,7 @@ export function createHttpServer() {
           JSON.stringify({
             status: 'ok',
             service: 'scrapidou',
-            version: '2.0.1',
+            version: VERSION,
             transport: 'streamable-http',
           })
         );
