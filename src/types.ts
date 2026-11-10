@@ -42,7 +42,11 @@ export interface FetchUrlInput {
   detectIssues?: boolean; // Default: true - Detect issues like paywall, login required, partial content. Set to false for faster extraction.
   extractRelatedLinks?: boolean; // Default: true - Extract contextual links like "See also", "Related articles"
   extractNavigationLinks?: boolean; // Default: false - Extract links from sidebar/navigation menus (useful for documentation)
+  contentScope?: ContentScope; // Default: 'article' - 'article': the main article only (Readability); 'page': the whole page minus navigation, site header/footer, sidebars, cookie banners and ads
+  includeImages?: boolean; // Default: false - Markdown only: keep images as ![alt](absolute url)
 }
+
+export type ContentScope = 'article' | 'page';
 
 export interface RelatedLink {
   url: string;

@@ -10,7 +10,7 @@
  */
 
 import { fetchPage } from '../client/httpClient.js';
-import { extractMainContent, extractTextContent } from '../utils/contentExtractor.js';
+import { extractScopedContent, extractTextContent } from '../utils/contentExtractor.js';
 import { extractMarkdownContent } from '../utils/markdownExtractor.js';
 import { detectIssues } from '../utils/issueDetector.js';
 import { extractRelatedLinks } from '../utils/linkExtractor.js';
@@ -37,6 +37,7 @@ export async function fetchUrl(input: FetchUrlInput): Promise<FetchUrlOutput> {
     const needsHtml = contentFormat === 'html' || contentFormat === 'both';
     const needsMarkdown = contentFormat === 'markdown';
     const mode = needsHtml ? 'full' : 'standard';
+    const scope = input.contentScope === 'page' ? 'page' : 'article';
 
     if (!url || typeof url !== 'string' || url.trim().length === 0) {
       throw new InvalidInputError('URL parameter is required and must be a non-empty string');
@@ -69,18 +70,18 @@ export async function fetchUrl(input: FetchUrlInput): Promise<FetchUrlOutput> {
     const metadata = extractMetadata(html);
 
     // 3. Extraire le texte nettoyé (toujours disponible dans tous les modes)
-    let contentText: string | undefined = extractTextContent(html, finalUrl);
+    let contentText: string | undefined = extractTextContent(html, finalUrl, scope);
 
     // 4. Extraire le HTML complet (seulement en mode 'full')
     let contentHTML: string | undefined;
     if (mode === 'full') {
-      contentHTML = extractMainContent(html, finalUrl);
+      contentHTML = extractScopedContent(html, finalUrl, scope);
     }
 
     // 4c. Extraire le Markdown (seulement si contentFormat === 'markdown')
     let contentMarkdown: string | undefined;
     if (needsMarkdown) {
-      contentMarkdown = extractMarkdownContent(html, finalUrl);
+      contentMarkdown = extractMarkdownContent(html, finalUrl, { scope, includeImages: input.includeImages === true });
     }
 
     // 4d. Appliquer maxContentLength (troncature centralisée dans l'orchestrateur)

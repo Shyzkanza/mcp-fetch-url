@@ -47,6 +47,18 @@ export const fetchUrlTool: Tool = {
         description:
           'Extract sidebar/menu navigation links. Useful for documentation sites and site mapping. Default: false.',
       },
+      contentScope: {
+        type: 'string',
+        enum: ['article', 'page'],
+        description:
+          '"article" (default): the main article only. "page": the whole page minus navigation, site header/footer, ' +
+          'sidebars, cookie banners and ads - keeps lists of links, tables, captions and comments that an article ' +
+          'extraction drops.',
+      },
+      includeImages: {
+        type: 'boolean',
+        description: 'Markdown only: keep images as ![alt](absolute url). Default: false.',
+      },
     },
     required: ['url'],
   },

@@ -67,6 +67,8 @@ export function createStdioServer(): Server {
             detectIssues,
             extractRelatedLinks,
             extractNavigationLinks,
+            contentScope: args.contentScope === 'page' ? 'page' : 'article',
+            includeImages: args.includeImages === true,
           });
 
           // Formatage pour MCP (texte lisible)
