@@ -1,6 +1,6 @@
 # 🧠 CONTEXT - Scrapidou
 
-**Last update**: 2025-01-27 (v2.0.1 - Patch release)
+**Last update**: 2026-11-10 (v2.3.0 - Lecture de la page entière)
 **Status**: ✅ Production ready
 
 ---
@@ -145,6 +145,24 @@ mcp-fetch-url/
 ---
 
 ## 📝 Changelog
+
+### v2.3.0 - 2026-11-10 - Lecture de la page entière
+
+**Release Notes**
+- ✅ **`contentScope: "page"`** - la page entière sans son habillage (navigation, menus, en-tête et pied du site, bandeaux cookies, publicités, formulaires), au lieu du seul article retenu par Readability, qui jetait les listes faites de liens (listes de lieux, d'adresses, de coordonnées). Défaut inchangé : `"article"`.
+- ✅ **`includeImages`** - les images gardées dans le Markdown (`![alt](src)`, liens absolus, images paresseuses `data-src` résolues). Défaut inchangé : sans images.
+- ✅ **Jeux de caractères** - la page est décodée selon son BOM, l'en-tête `Content-Type`, puis la balise `<meta charset>` ; repli windows-1252 quand l'UTF-8 produit des caractères de remplacement (vieux sites en latin-1).
+- ✅ **Tableaux** - un tableau de données devient un tableau Markdown, une ligne par ligne.
+- ✅ **Erreurs réseau** - un « fetch failed » donne sa cause (ENOTFOUND, ECONNRESET, certificat…).
+- ✅ **Fix** - les erreurs gardent leur classe (`instanceof NetworkError`) et leur nom.
+
+Banc du 2026-11-10 sur 203 pages de lieux de tournage déjà lues par Firecrawl : 77 % des lieux retrouvés par la 2.2.5, 95 % en `contentScope: "page"` avec images.
+
+**Git**
+- Tag: `2.3.0`
+- Branch: `main` (merged from develop)
+
+---
 
 ### v2.0.1 - 2025-01-27 - Patch Release
 

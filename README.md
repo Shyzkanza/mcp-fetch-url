@@ -7,7 +7,7 @@ Scrapidou is a clean, modular MCP server for web scraping and URL fetching.
 [![npm version](https://img.shields.io/npm/v/@shyzus/mcp-scrapidou)](https://www.npmjs.com/package/@shyzus/mcp-scrapidou)
 [![npm downloads](https://img.shields.io/npm/dm/@shyzus/mcp-scrapidou?cacheSeconds=3600)](https://www.npmjs.com/package/@shyzus/mcp-scrapidou)
 [![Website Status](https://img.shields.io/website?url=https%3A%2F%2Fscrapidou.rankorr.red%2Fhealth&label=API)](https://scrapidou.rankorr.red/health)
-![Node](https://img.shields.io/badge/node-20%2B-green)
+![Node](https://img.shields.io/badge/node-22%2B-green)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)
 ![MCP](https://img.shields.io/badge/MCP-2025--11--25-orange)
 ![ChatGPT](https://img.shields.io/badge/ChatGPT-MCP-purple)
