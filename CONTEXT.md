@@ -1,6 +1,6 @@
 # 🧠 CONTEXT - Scrapidou
 
-**Last update**: 2026-11-10 (v2.3.0 - Lecture de la page entière)
+**Last update**: 2026-11-10 (v2.3.1 - Lecture de la page entière)
 **Status**: ✅ Production ready
 
 ---
@@ -146,7 +146,9 @@ mcp-fetch-url/
 
 ## 📝 Changelog
 
-### v2.3.0 - 2026-11-10 - Lecture de la page entière
+### v2.3.1 - 2026-11-10 - Lecture de la page entière
+
+La 2.3.0 n'a jamais été publiée : sa release a échoué dans la CI (`npm version` refusait un `package.json` déjà à la version du tag, corrigé par `--allow-same-version`). La 2.3.1 porte son contenu.
 
 **Release Notes**
 - ✅ **`contentScope: "page"`** - la page entière sans son habillage (navigation, menus, en-tête et pied du site, bandeaux cookies, publicités, formulaires), au lieu du seul article retenu par Readability, qui jetait les listes faites de liens (listes de lieux, d'adresses, de coordonnées). Défaut inchangé : `"article"`.
@@ -159,7 +161,7 @@ mcp-fetch-url/
 Banc du 2026-11-10 sur 203 pages de lieux de tournage déjà lues par Firecrawl : 77 % des lieux retrouvés par la 2.2.5, 95 % en `contentScope: "page"` avec images.
 
 **Git**
-- Tag: `2.3.0`
+- Tag: `2.3.1`
 - Branch: `main` (merged from develop)
 
 ---
