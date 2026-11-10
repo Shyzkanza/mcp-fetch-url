@@ -268,6 +268,10 @@ Controls whether to detect issues on the page:
 - **All links included**: Related links and navigation links are returned in full (no limits)
 - **No `_meta` complexity**: Since there's no widget, we don't need complex `_meta` structures
 - **Truncation indicators**: When `maxContentLength` is used, the response includes `contentTextTruncated`/`contentHTMLTruncated` flags and length information
+- **Public addresses only**: the server refuses any URL — or redirection — that leads to a private or reserved address
+  (`127.0.0.1`, `localhost`, `10.x`, `172.16-31.x`, `192.168.x`, `169.254.169.254`, `::1`, `fc00::/7`…), whether
+  written as an IP or reached through a DNS name: the address checked is the one the connection is made to. For a local
+  use that must read a server of the machine, set `SCRAPIDOU_ALLOW_PRIVATE_NETWORK=true`
 
 ---
 
