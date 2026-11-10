@@ -34,9 +34,13 @@ import {
 import { getServerConfig } from '../config.js';
 import { fetchUrl } from '../tools/fetchUrl.js';
 import { fetchUrlTool } from '../tools/fetchUrlSchema.js';
+import { isAuthorized } from '../utils/auth.js';
 
 // Path pour Streamable HTTP (unifié)
 const MCP_PATH = '/mcp';
+
+// En-têtes qu'un client navigateur peut envoyer (preflight CORS)
+const CORS_ALLOW_HEADERS = 'content-type, authorization';
 
 /**
  * Crée une instance du serveur MCP
@@ -265,7 +269,7 @@ async function handleMcpRequest(req: IncomingMessage, res: ServerResponse) {
   const allowedOrigin = config.corsOrigin === '*' ? origin : config.corsOrigin;
 
   res.setHeader('Access-Control-Allow-Origin', allowedOrigin || '*');
-  res.setHeader('Access-Control-Allow-Headers', 'content-type');
+  res.setHeader('Access-Control-Allow-Headers', CORS_ALLOW_HEADERS);
   res.setHeader('Access-Control-Expose-Headers', 'Mcp-Session-Id'); // ⚠️ IMPORTANT pour CORS
 
   const server = createMcpServer();
@@ -304,6 +308,30 @@ async function handleMcpRequest(req: IncomingMessage, res: ServerResponse) {
 }
 
 /**
+ * 401 sans jeton valide, avant tout travail (ni lecture du corps, ni serveur MCP). Le corps est une erreur
+ * JSON-RPC, comme les autres erreurs du transport ; l'en-tête CORS laisse un client navigateur lire le refus.
+ */
+function refuseUnauthorized(req: IncomingMessage, res: ServerResponse, corsOrigin: string | undefined) {
+  const origin = req.headers.origin;
+  const allowedOrigin = corsOrigin === '*' ? origin : corsOrigin;
+  const userAgent = (req.headers['user-agent'] ?? '-').slice(0, 80);
+  console.log(`[HTTP] Refused (401): ${req.method} ${req.url} ua=${userAgent}`);
+
+  res.writeHead(401, {
+    'Content-Type': 'application/json',
+    'WWW-Authenticate': 'Bearer realm="scrapidou"',
+    'Access-Control-Allow-Origin': allowedOrigin || '*',
+  });
+  res.end(
+    JSON.stringify({
+      jsonrpc: '2.0',
+      error: { code: -32001, message: 'Unauthorized: missing or invalid bearer token' },
+      id: null,
+    })
+  );
+}
+
+/**
  * Crée et configure le serveur HTTP
  */
 export function createHttpServer() {
@@ -328,7 +356,7 @@ export function createHttpServer() {
       res.writeHead(204, {
         'Access-Control-Allow-Origin': allowedOrigin || '*',
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'content-type',
+        'Access-Control-Allow-Headers': CORS_ALLOW_HEADERS,
         'Access-Control-Expose-Headers': 'Mcp-Session-Id',
       });
       res.end();
@@ -356,6 +384,10 @@ export function createHttpServer() {
     // Streamable HTTP endpoint (GET et POST /mcp ou / - unifié)
     // ChatGPT peut accéder à la racine, donc on accepte aussi /
     if ((req.method === 'GET' || req.method === 'POST') && (url.pathname === MCP_PATH || url.pathname === '/')) {
+      if (config.apiToken && !isAuthorized(req.headers.authorization, config.apiToken)) {
+        refuseUnauthorized(req, res, config.corsOrigin);
+        return;
+      }
       await handleMcpRequest(req, res);
       return;
     }
@@ -384,6 +416,7 @@ export async function startHttpServer(): Promise<void> {
       console.log(`Scrapidou MCP Server (Streamable HTTP) running on http://localhost:${config.port}`);
       console.log(`  Health check: GET http://localhost:${config.port}/health`);
       console.log(`  MCP endpoint: GET/POST http://localhost:${config.port}${MCP_PATH}`);
+      console.log(`  Auth: ${config.apiToken ? 'bearer token required' : 'none (anyone can call the tools)'}`);
       resolve();
     });
   });

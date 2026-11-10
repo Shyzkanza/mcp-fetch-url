@@ -310,22 +310,28 @@ MCP (Model Context Protocol) is an open standard created by Anthropic that allow
 
 ### Use with Cursor / Claude Desktop / Warp
 
-You have **two options** to use Scrapidou:
+You have **two options** to use Scrapidou. Both reach the hosted server, which **requires a token**: every call to
+`/mcp` must carry `Authorization: Bearer <token>`, or it is refused with a `401`. To run your own server, see
+[For developers](#for-developers---local-installation).
 
 #### Option 1: Local Installation (Recommended for development)
 
-Install the npm client that runs locally:
+Install the npm client that runs locally; it sends the token from `SCRAPIDOU_TOKEN`:
 
 ```json
 {
   "mcpServers": {
     "mcp-scrapidou": {
       "command": "npx",
-      "args": ["-y", "@shyzus/mcp-scrapidou"]
+      "args": ["-y", "@shyzus/mcp-scrapidou"],
+      "env": { "SCRAPIDOU_TOKEN": "<token>" }
     }
   }
 }
 ```
+
+To point the client at another server, add its URL after the package name:
+`"args": ["-y", "@shyzus/mcp-scrapidou", "http://localhost:3000/mcp"]`.
 
 #### Option 2: Hosted Server (Recommended for production)
 
@@ -335,7 +341,8 @@ Use the production server hosted on our VPS:
 {
   "mcpServers": {
     "mcp-scrapidou": {
-      "url": "https://scrapidou.rankorr.red/mcp"
+      "url": "https://scrapidou.rankorr.red/mcp",
+      "headers": { "Authorization": "Bearer <token>" }
     }
   }
 }
@@ -354,9 +361,11 @@ Use the production server hosted on our VPS:
 
 ### Use with ChatGPT
 
-A production server is available and ready to use!
+The hosted server requires a bearer token, which ChatGPT's **"None"** authentication does not send: ChatGPT can only
+use a server of your own started with `SCRAPIDOU_ALLOW_ANONYMOUS=true` (and exposed through a tunnel, see
+`npm run dev:tunnel`). The steps below stay valid for such a server, with its own URL.
 
-**Server URL**: `https://scrapidou.rankorr.red/mcp`
+**Server URL**: `https://<your-server>/mcp`
 
 #### ChatGPT Configuration
 
@@ -372,7 +381,7 @@ A production server is available and ready to use!
    - Fill in the form:
      - **Name**: "Scrapidou" (or another name)
      - **Image**: Add an icon/image (optional)
-     - **Server URL**: `https://scrapidou.rankorr.red/mcp`
+     - **Server URL**: `https://<your-server>/mcp`
      - **Note**: The server uses **Streamable HTTP** transport (modern MCP standard)
      - **Authentication**: Select **"None"**
    - Click **"Create"**
@@ -514,7 +523,13 @@ Create a `.env` file:
 PORT=3000                          # HTTP server port
 NODE_ENV=production                # Environment
 CORS_ORIGIN=*                      # CORS origin (default: * in dev, https://chatgpt.com in prod)
+SCRAPIDOU_TOKEN=...                # Token required on /mcp (Authorization: Bearer), 32 characters minimum:
+                                   # openssl rand -hex 32. Without it, the server answers anyone
+SCRAPIDOU_ALLOW_ANONYMOUS=true     # In production, serve without a token (otherwise the server refuses to start)
+SCRAPIDOU_ALLOW_PRIVATE_NETWORK=true  # Let the tool read private addresses (local use only)
 ```
+
+`/health` and the CORS preflight stay open without a token.
 
 ---
 

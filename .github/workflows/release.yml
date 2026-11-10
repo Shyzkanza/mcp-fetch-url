@@ -76,13 +76,18 @@ jobs:
 
     - name: Deploy stack
       uses: appleboy/ssh-action@v1
+      env:
+        # Jeton exigé sur /mcp : docker-compose.yml le lit au déploiement et refuse de déployer sans lui
+        SCRAPIDOU_TOKEN: ${{ secrets.SCRAPIDOU_TOKEN }}
       with:
         host: ${{ secrets.VPS_HOST }}
         username: ${{ secrets.VPS_USER }}
         key: ${{ secrets.VPS_SSH_KEY }}
         passphrase: ${{ secrets.VPS_SSH_PASSPHRASE }}
-        envs: COMPOSE_B64
+        envs: COMPOSE_B64,SCRAPIDOU_TOKEN
         script: |
+          set -e
+          if [ -z "$SCRAPIDOU_TOKEN" ]; then echo "Secret GitHub SCRAPIDOU_TOKEN manquant : déploiement annulé"; exit 1; fi
           mkdir -p ~/scrapidou
           echo "$COMPOSE_B64" | base64 -d > ~/scrapidou/docker-compose.yml
           docker pull ghcr.io/shyzkanza/mcp-scrapidou:latest
@@ -109,6 +114,22 @@ jobs:
           sleep 10
         done
         echo "API not reachable after 5 attempts"
+        exit 1
+
+    - name: Test MCP refuses calls without token
+      run: |
+        for i in {1..5}; do
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST https://scrapidou.rankorr.red/mcp \
+            -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' \
+            -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}')
+          echo "Attempt $i/5: POST /mcp without token -> $code"
+          if [ "$code" = "401" ]; then
+            echo "MCP is closed to anonymous calls"
+            exit 0
+          fi
+          sleep 10
+        done
+        echo "MCP still answers without token"
         exit 1
 
   # Job 5: Publish npm (après validation du deploy Docker)

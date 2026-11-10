@@ -7,6 +7,8 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
+      # Jeton exigé sur /mcp, fourni au déploiement par le secret GitHub SCRAPIDOU_TOKEN
+      - SCRAPIDOU_TOKEN=${SCRAPIDOU_TOKEN:?SCRAPIDOU_TOKEN must be set to deploy}
     deploy:
       replicas: 1
       placement:

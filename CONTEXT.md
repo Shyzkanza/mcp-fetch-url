@@ -1,6 +1,6 @@
 # 🧠 CONTEXT - Scrapidou
 
-**Last update**: 2026-11-10 (v2.3.2 - Protection SSRF)
+**Last update**: 2026-11-11 (v2.4.0 - Serveur fermé par jeton)
 **Status**: ✅ Production ready
 
 ---
@@ -145,6 +145,29 @@ mcp-fetch-url/
 ---
 
 ## 📝 Changelog
+
+### v2.4.0 - 2026-11-11 - Serveur fermé par jeton
+
+Les journaux du VPS (21/10 au 10/11) ne montraient aucun utilisateur en dehors de Ciné-Trotter : le serveur public,
+sans authentification, lisait des pages pour n'importe qui depuis l'IP du VPS. Il est désormais réservé à ses clients.
+
+**Release Notes**
+- ✅ **Jeton (`SCRAPIDOU_TOKEN`)** - `/mcp` et `/` exigent `Authorization: Bearer <jeton>`, comparé en temps constant ;
+  sinon 401 (erreur JSON-RPC, `WWW-Authenticate`), avant toute lecture de la requête. `/health` et le preflight CORS
+  restent ouverts ; `authorization` est admis en CORS.
+- ✅ **Production** - le serveur refuse de démarrer sans jeton, sauf `SCRAPIDOU_ALLOW_ANONYMOUS=true` ; un jeton de
+  moins de 32 caractères est refusé.
+- ✅ **Déploiement** - `docker-compose.yml` lit `${SCRAPIDOU_TOKEN:?}`, fourni par le secret GitHub du même nom ; la
+  release s'arrête avant de toucher au service s'il manque, et le health check vérifie qu'un appel sans jeton reçoit 401.
+- ✅ **Fix client npm** - le paquet plantait au démarrage (« Server does not support tools ») et ses requêtes recevaient
+  un 406 (en-tête `Accept`, réponse SSE) : il fonctionne et envoie le jeton de `SCRAPIDOU_TOKEN`.
+- ⚠️ **ChatGPT** - son authentification « None » n'envoie pas de jeton : il ne peut plus utiliser le serveur hébergé.
+
+**Git**
+- Tag: `2.4.0`
+- Branch: `main` (merged from develop)
+
+---
 
 ### v2.3.2 - 2026-11-10 - Protection SSRF
 

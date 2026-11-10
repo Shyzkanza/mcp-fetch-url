@@ -67,6 +67,8 @@ Via Cursor :
 PORT=3000
 NODE_ENV=development
 CORS_ORIGIN=*
+SCRAPIDOU_TOKEN=          # Jeton exigé sur /mcp (Bearer), obligatoire en production
+SCRAPIDOU_ALLOW_ANONYMOUS= # true : production sans jeton
 ```
 
 ## Endpoints
