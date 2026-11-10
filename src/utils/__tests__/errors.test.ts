@@ -100,10 +100,10 @@ describe('formatErrorForMCP', () => {
 });
 
 describe('isNetworkError', () => {
-  it('returns true for NetworkError with network keyword in message', () => {
-    // Note: instanceof NetworkError doesn't work due to Object.setPrototypeOf in ScrapidouError constructor.
-    // But the message-based check picks it up if the message contains a network keyword.
-    expect(isNetworkError(new NetworkError('network connection failed'))).toBe(true);
+  it('returns true for NetworkError instances (prototype chain preserved)', () => {
+    const err = new NetworkError('timeout');
+    expect(err).toBeInstanceOf(NetworkError);
+    expect(isNetworkError(err)).toBe(true);
   });
 
   it('returns true for Error with network-related message', () => {
