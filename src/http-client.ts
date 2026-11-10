@@ -21,7 +21,7 @@ const TOKEN = process.env.SCRAPIDOU_TOKEN?.trim();
 const server = new Server(
   {
     name: 'scrapidou-http-proxy',
-    version: '2.3.2',
+    version: '2.4.0',
   },
   {
     capabilities: {

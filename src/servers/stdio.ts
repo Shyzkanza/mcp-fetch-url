@@ -22,7 +22,7 @@ export function createStdioServer(): Server {
   const server = new Server(
     {
       name: 'scrapidou',
-      version: '2.3.2',
+      version: '2.4.0',
     },
     {
       capabilities: {
