@@ -80,6 +80,10 @@ describe('guardedLookup', () => {
     expect(one.address).toBe('127.0.0.1');
     const all = await lookup('localhost', { all: true, family: 4 });
     expect(all.err).toBeNull();
-    expect(all.address).toEqual([{ address: '127.0.0.1', family: 4 }]);
+    // une ou plusieurs adresses selon /etc/hosts de la machine (deux sur les runners Ubuntu)
+    const list = all.address as { address: string; family: number }[];
+    expect(list.length).toBeGreaterThan(0);
+    expect(list).toContainEqual({ address: '127.0.0.1', family: 4 });
+    expect(list.every((a) => a.family === 4 && a.address.startsWith('127.'))).toBe(true);
   });
 });
