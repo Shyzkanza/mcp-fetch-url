@@ -10,6 +10,8 @@ export interface ServerConfig {
   port: number;
   nodeEnv: string;
   corsOrigin?: string;
+  /** Jeton exigé sur /mcp (`Authorization: Bearer`). Absent : le serveur répond sans authentification. */
+  apiToken?: string;
 }
 
 // ============================================================================

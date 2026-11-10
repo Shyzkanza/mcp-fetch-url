@@ -28,6 +28,20 @@ This file explains the secrets to configure in GitHub for automatic deployment v
 
 ---
 
+### For the Server
+
+#### `SCRAPIDOU_TOKEN`
+**Description**: token the server requires on `/mcp` (`Authorization: Bearer <token>`). The release workflow passes it
+to `docker stack deploy`; without it, the deployment stops before touching the running service.
+**How to get it**: `openssl rand -hex 32` (32 characters minimum), then `gh secret set SCRAPIDOU_TOKEN`.
+**Clients**: every client of `https://scrapidou.rankorr.red/mcp` needs the same value (MCP config `headers`,
+`SCRAPIDOU_TOKEN` for the npm client and the Ciné-Trotter scripts).
+
+⚠️ **Rotation**: the server knows one token at a time. A new value takes a release (or a `docker service update
+--env-add` on the VPS), and the clients are refused until they carry it.
+
+---
+
 ### For VPS Deployment (Portainer API)
 
 ### 1. `PORTAINER_URL`
