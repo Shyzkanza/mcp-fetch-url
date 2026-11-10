@@ -2,11 +2,19 @@
  * Client HTTP pour récupérer le contenu des pages web
  */
 
-import { NetworkError } from '../utils/errors.js';
+import { fetch, Agent } from 'undici';
+import { NetworkError, ScrapidouError } from '../utils/errors.js';
 import { decodeHtml } from '../utils/charset.js';
+import { assertPublicUrl, guardedLookup } from '../utils/addressGuard.js';
 
 const DEFAULT_TIMEOUT = 30000; // 30 secondes
 const MAX_REDIRECTS = 5;
+
+/**
+ * Toutes les connexions passent par guardedLookup : l'adresse contrôlée est celle à laquelle on se connecte
+ * (protection SSRF, voir addressGuard.ts).
+ */
+const dispatcher = new Agent({ connect: { lookup: guardedLookup } });
 
 /**
  * Headers HTTP recommandés pour éviter les blocages
@@ -39,18 +47,9 @@ export async function fetchPage(
   timeout: number = DEFAULT_TIMEOUT
 ): Promise<FetchPageResult> {
   // Valider l'URL
-  let parsedUrl: URL;
   try {
-    parsedUrl = new URL(url);
-    if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
-      throw new NetworkError(
-        `Invalid URL protocol: ${parsedUrl.protocol}. Only http:// and https:// are supported.`
-      );
-    }
-  } catch (error) {
-    if (error instanceof NetworkError) {
-      throw error;
-    }
+    new URL(url);
+  } catch {
     throw new NetworkError(`Invalid URL format: ${url}`);
   }
 
@@ -59,6 +58,9 @@ export async function fetchPage(
 
   while (redirectCount <= MAX_REDIRECTS) {
     try {
+      // Chaque saut, redirections comprises : http(s) et pas d'IP privée écrite en clair
+      assertPublicUrl(new URL(currentUrl));
+
       // Créer un AbortController pour le timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -68,6 +70,7 @@ export async function fetchPage(
         headers: DEFAULT_HEADERS,
         signal: controller.signal,
         redirect: 'manual', // Gérer les redirections manuellement
+        dispatcher,
       });
 
       clearTimeout(timeoutId);
@@ -118,7 +121,7 @@ export async function fetchPage(
         statusCode: response.status,
       };
     } catch (error) {
-      if (error instanceof NetworkError) {
+      if (error instanceof ScrapidouError) {
         throw error;
       }
 
@@ -131,6 +134,9 @@ export async function fetchPage(
         // « fetch failed » seul ne dit rien : la cause (ENOTFOUND, ECONNRESET, ENETUNREACH, certificat…) est
         // dans error.cause. Sur le serveur, Wikipédia et d'autres sites sortaient ainsi (2026-11-10).
         const cause = (error as Error & { cause?: { code?: string; message?: string } }).cause;
+        if (cause instanceof ScrapidouError) {
+          throw cause; // adresse refusée par guardedLookup
+        }
         const why = cause ? [cause.code, cause.message].filter(Boolean).join(' ') : '';
         throw new NetworkError(`Network error: ${error.message}${why ? ` (${why})` : ''}`, {
           url: currentUrl,
