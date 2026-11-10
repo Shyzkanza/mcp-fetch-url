@@ -7,7 +7,7 @@ Scrapidou is a clean, modular MCP server for web scraping and URL fetching.
 [![npm version](https://img.shields.io/npm/v/@shyzus/mcp-scrapidou)](https://www.npmjs.com/package/@shyzus/mcp-scrapidou)
 [![npm downloads](https://img.shields.io/npm/dm/@shyzus/mcp-scrapidou?cacheSeconds=3600)](https://www.npmjs.com/package/@shyzus/mcp-scrapidou)
 [![Website Status](https://img.shields.io/website?url=https%3A%2F%2Fscrapidou.rankorr.red%2Fhealth&label=API)](https://scrapidou.rankorr.red/health)
-![Node](https://img.shields.io/badge/node-20%2B-green)
+![Node](https://img.shields.io/badge/node-22%2B-green)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue)
 ![MCP](https://img.shields.io/badge/MCP-2025--11--25-orange)
 ![ChatGPT](https://img.shields.io/badge/ChatGPT-MCP-purple)
@@ -62,6 +62,12 @@ ChatGPT will use the MCP server to fetch, extract, and return the content accord
 - **Content size control**: Use `maxContentLength` for quick mapping (500-1000 chars) or leave `undefined` for complete analysis
 - **Issue detection**: Control with `detectIssues` parameter (default: `true`)
 - **Link extraction**: Configure `extractRelatedLinks` and `extractNavigationLinks` independently
+- **Content scope**: `contentScope: 'article'` (default) keeps the main article only (Readability); `contentScope: 'page'`
+  keeps the whole page minus navigation, site header/footer, sidebars, cookie banners and ads — lists of links, tables,
+  captions and comments included, which an article extraction drops
+- **Images**: `includeImages: true` keeps images in the Markdown as `![alt](absolute url)` (default: removed)
+- **Character sets**: pages are decoded by their declared charset (header, then `<meta>`), and an undeclared page that
+  is not UTF-8 is read as windows-1252, as a browser does
 
 ---
 
@@ -88,7 +94,8 @@ The tool extracts three types of content, and you can choose which one(s) to ret
      - Uses Mozilla Readability to extract the main content
      - Converts to Markdown via Turndown with ATX headings, fenced code blocks, inline links
      - Preserves code block languages (e.g. ` ```python `)
-     - Removes images (not useful for LLM text analysis)
+     - Renders data tables as Markdown tables (each row kept with its cells); layout tables keep their blocks
+     - Removes images, unless `includeImages: true`
    - **Available when**: `contentFormat: 'markdown'`
    - **Use case**: Best for LLM analysis - preserves structure, links, and code formatting
    - **No size limit**: Full content is returned in `structuredContent.contentMarkdown`

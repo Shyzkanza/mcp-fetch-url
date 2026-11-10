@@ -22,7 +22,7 @@ export function createStdioServer(): Server {
   const server = new Server(
     {
       name: 'scrapidou',
-      version: '2.0.1',
+      version: '2.3.0',
     },
     {
       capabilities: {
@@ -67,6 +67,8 @@ export function createStdioServer(): Server {
             detectIssues,
             extractRelatedLinks,
             extractNavigationLinks,
+            contentScope: args.contentScope === 'page' ? 'page' : 'article',
+            includeImages: args.includeImages === true,
           });
 
           // Formatage pour MCP (texte lisible)

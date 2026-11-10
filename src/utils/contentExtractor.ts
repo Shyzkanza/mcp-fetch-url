@@ -6,17 +6,27 @@
 import { Readability } from '@mozilla/readability';
 import { JSDOM } from 'jsdom';
 import * as cheerio from 'cheerio';
+import { extractPageContent } from './pageContent.js';
+import type { ContentScope } from '../types.js';
+
+/**
+ * HTML du contenu selon la portée demandée : l'article seul (Readability, défaut) ou la page entière sans habillage.
+ */
+export function extractScopedContent(html: string, url: string, scope: ContentScope = 'article'): string {
+  return scope === 'page' ? extractPageContent(html, url) : extractMainContent(html, url);
+}
 
 /**
  * Extrait le texte nettoyé et lisible d'une page HTML (sans balises HTML)
- * 
+ *
  * @param html - Contenu HTML brut de la page
  * @param url - URL de la page (pour résoudre les URLs relatives)
+ * @param scope - 'article' (défaut) ou 'page'
  * @returns Texte nettoyé et lisible
  */
-export function extractTextContent(html: string, url: string): string {
+export function extractTextContent(html: string, url: string, scope: ContentScope = 'article'): string {
   // D'abord extraire le contenu principal HTML
-  const mainContentHtml = extractMainContent(html, url);
+  const mainContentHtml = extractScopedContent(html, url, scope);
 
   // Convertir le HTML en texte lisible
   const $ = cheerio.load(mainContentHtml);

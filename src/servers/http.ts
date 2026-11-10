@@ -85,6 +85,8 @@ function createMcpServer(): Server {
         detectIssues?: boolean;
         extractRelatedLinks?: boolean;
         extractNavigationLinks?: boolean;
+        contentScope?: 'article' | 'page';
+        includeImages?: boolean;
       };
 
       if (!args || !args.url) {
@@ -106,6 +108,8 @@ function createMcpServer(): Server {
         detectIssues: detectIssues,
         extractRelatedLinks: extractRelatedLinks,
         extractNavigationLinks: extractNavigationLinks,
+        contentScope: args.contentScope === 'page' ? 'page' : 'article',
+        includeImages: args.includeImages === true,
       });
 
       // Format pour ChatGPT : structuredContent avec contenu complet

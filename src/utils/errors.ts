@@ -14,8 +14,8 @@ export class ScrapidouError extends Error {
     public readonly details?: unknown
   ) {
     super(message);
-    this.name = 'ScrapidouError';
-    Object.setPrototypeOf(this, ScrapidouError.prototype);
+    this.name = new.target.name;
+    Object.setPrototypeOf(this, new.target.prototype);
   }
 
   /**

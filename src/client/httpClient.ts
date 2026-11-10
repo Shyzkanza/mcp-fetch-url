@@ -3,6 +3,7 @@
  */
 
 import { NetworkError } from '../utils/errors.js';
+import { decodeHtml } from '../utils/charset.js';
 
 const DEFAULT_TIMEOUT = 30000; // 30 secondes
 const MAX_REDIRECTS = 5;
@@ -100,15 +101,16 @@ export async function fetchPage(
 
       // Vérifier le Content-Type (tolérant si absent, accepte xhtml+xml)
       const contentType = response.headers.get('content-type') || '';
-      if (contentType && !contentType.includes('text/html') && !contentType.includes('application/xhtml+xml')) {
+      const ct = contentType.toLowerCase();
+      if (ct && !ct.includes('text/html') && !ct.includes('application/xhtml+xml')) {
         throw new NetworkError(
           `Expected HTML content, got: ${contentType}`,
           { contentType, url: currentUrl }
         );
       }
 
-      // Lire le contenu
-      const html = await response.text();
+      // Lire le contenu, décodé selon son jeu de caractères (pas toujours UTF-8)
+      const html = decodeHtml(new Uint8Array(await response.arrayBuffer()), contentType);
 
       return {
         html,
@@ -126,9 +128,14 @@ export async function fetchPage(
             url: currentUrl,
           });
         }
-        throw new NetworkError(`Network error: ${error.message}`, {
+        // « fetch failed » seul ne dit rien : la cause (ENOTFOUND, ECONNRESET, ENETUNREACH, certificat…) est
+        // dans error.cause. Sur le serveur, Wikipédia et d'autres sites sortaient ainsi (2026-11-10).
+        const cause = (error as Error & { cause?: { code?: string; message?: string } }).cause;
+        const why = cause ? [cause.code, cause.message].filter(Boolean).join(' ') : '';
+        throw new NetworkError(`Network error: ${error.message}${why ? ` (${why})` : ''}`, {
           url: currentUrl,
           originalError: error.message,
+          ...(why ? { cause: why } : {}),
         });
       }
 
