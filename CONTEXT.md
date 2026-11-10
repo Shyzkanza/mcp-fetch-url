@@ -1,6 +1,6 @@
 # 🧠 CONTEXT - Scrapidou
 
-**Last update**: 2026-11-10 (v2.3.1 - Lecture de la page entière)
+**Last update**: 2026-11-10 (v2.3.2 - Protection SSRF)
 **Status**: ✅ Production ready
 
 ---
@@ -145,6 +145,24 @@ mcp-fetch-url/
 ---
 
 ## 📝 Changelog
+
+### v2.3.2 - 2026-11-10 - Protection SSRF
+
+**Release Notes**
+- ✅ **Fix sécurité (SSRF)** - le serveur, public et sans authentification, lisait n'importe quelle URL, y compris
+  `127.0.0.1`, le réseau Docker du VPS ou `169.254.169.254`, et en rendait le contenu. Il refuse désormais toute
+  adresse privée ou réservée (IPv4 et IPv6, IPv4 dans IPv6 comprise), écrite en clair ou atteinte par un nom DNS, à
+  chaque redirection. Le contrôle se fait dans la résolution DNS de la connexion (`undici` Agent, `connect.lookup`) :
+  l'adresse contrôlée est celle à laquelle on se connecte, un DNS qui change de réponse ne passe pas.
+- ✅ **`SCRAPIDOU_ALLOW_PRIVATE_NETWORK=true`** - lève la garde pour un usage local.
+- ✅ **Redirections** - le protocole est revérifié à chaque saut (http et https seulement).
+- ✅ **Dépendance** - `undici` 7.30.1 en direct (déjà présent par cheerio).
+
+**Git**
+- Tag: `2.3.2`
+- Branch: `main` (merged from develop)
+
+---
 
 ### v2.3.1 - 2026-11-10 - Lecture de la page entière
 
